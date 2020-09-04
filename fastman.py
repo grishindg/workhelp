@@ -7,6 +7,10 @@ from tkinter import ttk
 from funcs import TotEvents, dateRe
 from openpyxl import load_workbook
 
+#Времмено 
+# import locale
+# print(locale.getlocale())
+#
 
 PATH_TO_DB = './files/events.db'
 EXFILE = './files/events.xlsx'
@@ -106,6 +110,7 @@ class Fastman(tk.Frame):
 
 		#События_______________________
 	def store(self):
+		'''Добавляем событие в список событий, по кнопке'''
 		#проверяем соответсвие времени
 		overh = False
 		time = self.eTime.get()
@@ -139,19 +144,20 @@ class Fastman(tk.Frame):
 			if self.varWorkers[i].get():
 				members += ' ' + WORKERS[i]
 		members = members.strip()
-		print(self.vEvent.get())
-		print(start.isoformat(sep=' '))
-		print(finish.isoformat(sep=' '))
-		print(members.strip())
-		'''функция по нажатию Ебаш'''
-		# tempstr = f'{self.vTime.get()} {self.vEvent.get()}'
 
-		#TODO Сразу сохранять в большой лист а из нео печатать
-		# self.textpos += 1
-		# tempstr += '\n'
-		# self.tPole.insert(f'{self.textpos}.0', tempstr)
-
+		self.timetTable.append(TotEvents(self.vEvent.get(), start, finish, members))
+		self.redrawtext()
 		self.clear()
+
+	def redrawtext(self):
+		'''Вывод в окно программы'''
+		self.tPole.delete('1.0', 'end')
+		tfrm = r'%a%d %H:%M'
+		r = 1
+		for ev in self.timetTable:
+			self.tPole.insert(f'{r}.0', f'({r}) {ev.start.strftime(tfrm)} '
+			 							f'{ev.finish.strftime(tfrm)} "{ev.ev_name}" {ev.members}\n')
+			r+=1
 
 	def namesChange(self, event):
 		'''редактирует список событий'''
@@ -169,6 +175,7 @@ class Fastman(tk.Frame):
 		self.lbEvents.select_set(0)
 
 	def applyEvent(self, event):
+		'''Когда выбано собыите, по клавише Enter заполняются данные'''
 		tempind = self.lbEvents.curselection()
 		if len(tempind) == 0:
 			print('Ничего не выбрано')
@@ -191,8 +198,8 @@ class Fastman(tk.Frame):
 	def clear(self):
 		for ch in self.chWorkers:
 			ch['bg'] = 'SystemButtonFace'
-		for v in self.varWorkers:
-			v.set(0)
+		# for v in self.varWorkers:
+		# 	v.set(0)
 		self.vTime.set('')
 		self.vEvent.set('')
 		self.vListOfEvents.set(self.listNamesEvents[:])
