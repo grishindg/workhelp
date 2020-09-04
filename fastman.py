@@ -50,7 +50,6 @@ class Fastman(tk.Frame):
 		#Инициализация__________________
 
 		self.bNewEvent = tk.Button(self, text = 'Ебаш', command=self.store)
-		# self.lStart = tk.Label(self, text = 'время')
 		self.eYear = tk.Entry(self, textvariable=self.vYear, width=4, takefocus=0)
 		self.eMonth = tk.Entry(self, textvariable=self.vMonth, width=4, takefocus=0)
 		self.eTime = tk.Entry(self, textvariable=self.vTime)
@@ -58,9 +57,22 @@ class Fastman(tk.Frame):
 		self.lWorkers = tk.Label(self, text = 'Работники')
 		self.lbEvents = tk.Listbox(self, height=4, width=50, listvariable=self.vListOfEvents)
 		self.frWorkers = tk.Frame(self)
-		self.somech = tk.Checkbutton(self.frWorkers, text='some')
+		# self.somech = tk.Checkbutton(self.frWorkers, text='some')
 
-		self.tPole = tk.Text(self, width=80)
+		self.tPole = tk.Text(self, width=80, takefocus=0)
+
+		self.chWorkers = []
+		self.varWorkers = []
+		for i in range(len(WORKERS)):
+			tempvar = tk.BooleanVar()
+			tempvar.set(0)
+			self.varWorkers.append(tempvar)
+			tempbt = tk.Checkbutton(self.frWorkers,
+									text=WORKERS[i],
+									variable=tempvar,
+									takefocus=0)
+			tempbt.grid(row=i, column=0, sticky=tk.NW)
+			self.chWorkers.append(tempbt)
 
 		#Позиционирование________________
 
@@ -76,26 +88,16 @@ class Fastman(tk.Frame):
 		self.frWorkers.grid(row=1, column=3, rowspan=3, sticky=tk.NW)
 		self.tPole.grid(row=2, column=0, rowspan=2, columnspan=3)
 
-		self.chWorkers = []
-		self.varWorkers = []
-		for i in range(len(WORKERS)):
-			tempvar = tk.BooleanVar()
-			tempvar.set(0)
-			self.varWorkers.append(tempvar)
-			tempbt = tk.Checkbutton(self.frWorkers,
-									text=WORKERS[i],
-									variable=tempvar)
-			tempbt.grid(row=i, column=0, sticky=tk.NW)
-			self.chWorkers.append(tempbt)
-			# self.chWorkers[0]['bg'] = 'GREY'
-			# self.chWorkers[0]['bg'] = 'SystemButtonFace'
+
+
 		#БИНДЫ__________________________
 
 		self.eEvent.bind('<KeyRelease>', self.namesChange)
 		self.eEvent.bind('<Down>', self.chFocusTolist)
 		self.lbEvents.bind('<Return>', self.applyEvent)
-
-
+		#бинды всего приложения
+		self.master.bind('<F2>', self.clearWorkers)
+		self.master.bind('<F1>', self.store)
 		#функции по событиям__________________
 	def db_import(self, db):
 		"""Запускается при иниц, заполняет внутр список знач из базы"""
@@ -109,7 +111,7 @@ class Fastman(tk.Frame):
 		self.modyfListNamesEvents = self.listNamesEvents[:] #Должен быть копией, чтобы индексы соответсвовали
 
 		#События_______________________
-	def store(self):
+	def store(self, event=None):#None помогает разделить функционал между кнопкой и командой
 		'''Добавляем событие в список событий, по кнопке'''
 		#проверяем соответсвие времени
 		overh = False
@@ -150,7 +152,7 @@ class Fastman(tk.Frame):
 		self.clear()
 
 	def redrawtext(self):
-		'''Вывод в окно программы'''
+		'''Вывод в окно программы списка из tableText'''
 		self.tPole.delete('1.0', 'end')
 		tfrm = r'%a%d %H:%M'
 		r = 1
@@ -198,14 +200,16 @@ class Fastman(tk.Frame):
 	def clear(self):
 		for ch in self.chWorkers:
 			ch['bg'] = 'SystemButtonFace'
-		# for v in self.varWorkers:
-		# 	v.set(0)
+
 		self.vTime.set('')
 		self.vEvent.set('')
 		self.vListOfEvents.set(self.listNamesEvents[:])
 		self.modyfListNamesEvents = self.listNamesEvents[:]
 		self.eEvent.focus_set()
 
+	def clearWorkers(self, event):
+		for w in self.varWorkers:
+			w.set(0)
 
 def main():
 	root  = tk.Tk()	
