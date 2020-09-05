@@ -14,7 +14,8 @@ from openpyxl import load_workbook
 
 PATH_TO_DB = './files/events.db'
 EXFILE = './files/events.xlsx'
-WORKERS = ['Даниил', 'Влад', 'Андрей', 'Марина', 'Арсений', 'Ольга', 'Василий','Денис']
+MONTH_N = ('январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь')
+WORKERS = ('Даниил', 'Влад', 'Андрей', 'Марина', 'Арсений', 'Ольга', 'Василий','Денис')
 
 class Fastman(tk.Frame):
 	def __init__(self, master):
@@ -30,6 +31,7 @@ class Fastman(tk.Frame):
 		self.textpos = 0 #номер строки
 		self.vTime = tk.StringVar()
 		self.vEvent = tk.StringVar()
+		self.vConsole = tk.StringVar()
 
 		self.vYear = tk.IntVar(value=2020)
 		self.vMonth = tk.IntVar(value=8)
@@ -40,7 +42,7 @@ class Fastman(tk.Frame):
 		self.modyfListNamesEvents = [] #для присваивания vListOfEvents чтобы фильтровать список
 									   #чтобы не вытаскивать список из строки vListOfEvents
 		self.mainEventsArr = [] #Сюда скидывается список типовых событий из базы из базы данных
-		self.timetTable = [] # Созданное расписание
+		self.timeTable = [] # Созданное расписание
 
 		self.create_widgets()
 		print('наполнение из базы')
@@ -58,7 +60,7 @@ class Fastman(tk.Frame):
 		self.lbEvents = tk.Listbox(self, height=4, width=50, listvariable=self.vListOfEvents)
 		self.frWorkers = tk.Frame(self)
 		# self.somech = tk.Checkbutton(self.frWorkers, text='some')
-
+		self.lConsole = tk.Label(self, textvariable=self.vConsole)
 		self.tPole = tk.Text(self, width=80, takefocus=0)
 
 		self.chWorkers = []
@@ -81,6 +83,7 @@ class Fastman(tk.Frame):
 		self.eYear.grid(row=1, column=0, sticky=tk.NE)
 		self.lbEvents.grid(row=1, column=2)
 		self.eTime.grid(row=0, column=1, sticky=tk.E)
+		self.lConsole.grid(row=1, column=1, sticky=tk.NE)
 
 		self.lWorkers.grid(row=0, column=3)
 
@@ -98,6 +101,7 @@ class Fastman(tk.Frame):
 		#бинды всего приложения
 		self.master.bind('<F2>', self.clearWorkers)
 		self.master.bind('<F1>', self.store)
+		self.master.bind('<F3>', self.storeDb)#пишем в базу данных
 		#функции по событиям__________________
 	def db_import(self, db):
 		"""Запускается при иниц, заполняет внутр список знач из базы"""
@@ -110,6 +114,24 @@ class Fastman(tk.Frame):
 		self.vListOfEvents.set(self.listNamesEvents[:])
 		self.modyfListNamesEvents = self.listNamesEvents[:] #Должен быть копией, чтобы индексы соответсвовали
 
+	def storeDb(self, re=True):
+		'''Запись месяца в базу данных'''
+		conn = sqlite3.connect(PATH_TO_DB)
+		curs = conn.cursor()
+		table = MONTH_N[int(self.vMonth.get()-1)]
+		try:
+			curs.execute('CREATE TABLE {} (name TEXT, start REAL, finish REAL, members TEXT, notes TEXT)'.format(table))
+		except sqlite3.OperationalError:
+			print(f'Таблица {table} уже есть, будет очищена')
+			curs.execute('DELETE FROM {}'.format(table))
+		for ev in self.timeTable:
+			curs.execute('INSERT INTO {} VALUES ("{}", {}, {}, "{}", "{}")'.format(table, ev.name, ev.start.timestamp(), \
+																				   ev.finish.timestamp(), ev.members, ev.notes))
+		conn.commit()
+		conn.close()
+		print('Записано')
+
+
 		#События_______________________
 	def store(self, event=None):#None помогает разделить функционал между кнопкой и командой
 		'''Добавляем событие в список событий, по кнопке'''
@@ -118,7 +140,8 @@ class Fastman(tk.Frame):
 		time = self.eTime.get()
 		traceddate = dateRe.fullmatch(time)
 		if not traceddate:
-			print('НЕ ФОРМАТ ДАТЫ')
+			# print('НЕ ФОРМАТ ДАТЫ')
+			self.vConsole.set('Неверный формат даты')
 			return
 		rawlist = traceddate.groups()
 		secnday = rawlist[2] if rawlist[2] else rawlist[0] #если не упомянут второй день, используется первый
@@ -147,7 +170,7 @@ class Fastman(tk.Frame):
 				members += ' ' + WORKERS[i]
 		members = members.strip()
 
-		self.timetTable.append(TotEvents(self.vEvent.get(), start, finish, members))
+		self.timeTable.append(TotEvents(self.vEvent.get(), start, finish, members))
 		self.redrawtext()
 		self.clear()
 
@@ -156,9 +179,9 @@ class Fastman(tk.Frame):
 		self.tPole.delete('1.0', 'end')
 		tfrm = r'%a%d %H:%M'
 		r = 1
-		for ev in self.timetTable:
+		for ev in self.timeTable:
 			self.tPole.insert(f'{r}.0', f'({r}) {ev.start.strftime(tfrm)} '
-			 							f'{ev.finish.strftime(tfrm)} "{ev.ev_name}" {ev.members}\n')
+			 							f'{ev.finish.strftime(tfrm)} "{ev.name}" {ev.members}\n')
 			r+=1
 
 	def namesChange(self, event):
@@ -205,6 +228,7 @@ class Fastman(tk.Frame):
 		self.vEvent.set('')
 		self.vListOfEvents.set(self.listNamesEvents[:])
 		self.modyfListNamesEvents = self.listNamesEvents[:]
+		self.vConsole.set('')
 		self.eEvent.focus_set()
 
 	def clearWorkers(self, event):
