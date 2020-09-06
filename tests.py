@@ -23,6 +23,6 @@ def timetest():
 	import datetime as dt
 	d = dt.datetime(year=2020, month=9, day=12)
 	t = d.timestamp()
-	print(t)
+	print(d.day, type(d.day))
 if __name__ == '__main__':
 	timetest()

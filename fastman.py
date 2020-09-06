@@ -2,15 +2,12 @@
 import sqlite3
 import datetime as dt
 import tkinter as tk
+import locale
 from tkinter import ttk
 
 from funcs import TotEvents, dateRe
-from openpyxl import load_workbook
 
-#Времмено 
-# import locale
-# print(locale.getlocale())
-#
+locale.setlocale(locale.LC_TIME, "ru_RU")
 
 PATH_TO_DB = './files/events.db'
 EXFILE = './files/events.xlsx'
@@ -122,8 +119,8 @@ class Fastman(tk.Frame):
 		try:
 			curs.execute('CREATE TABLE {} (name TEXT, start REAL, finish REAL, members TEXT, notes TEXT)'.format(table))
 		except sqlite3.OperationalError:
-			print(f'Таблица {table} уже есть, будет очищена')
-			curs.execute('DELETE FROM {}'.format(table))
+			print(f'Таблица {table} уже есть, будет дополнена')
+			# curs.execute('DELETE FROM {}'.format(table))
 		for ev in self.timeTable:
 			curs.execute('INSERT INTO {} VALUES ("{}", {}, {}, "{}", "{}")'.format(table, ev.name, ev.start.timestamp(), \
 																				   ev.finish.timestamp(), ev.members, ev.notes))
@@ -136,7 +133,7 @@ class Fastman(tk.Frame):
 	def store(self, event=None):#None помогает разделить функционал между кнопкой и командой
 		'''Добавляем событие в список событий, по кнопке'''
 		#проверяем соответсвие времени
-		overh = False
+		overh = False #если указано 24 часа, это переменная добавит день
 		time = self.eTime.get()
 		traceddate = dateRe.fullmatch(time)
 		if not traceddate:
@@ -146,7 +143,7 @@ class Fastman(tk.Frame):
 		rawlist = traceddate.groups()
 		secnday = rawlist[2] if rawlist[2] else rawlist[0] #если не упомянут второй день, используется первый
 		if int(rawlist[3][:-2]) >= 24: #меняет 24 на 0
-			overh = True
+			overh = True 
 			new_fin = '0' + rawlist[3][-2:]
 			rawlist = (rawlist[0],
 					   rawlist[1],
