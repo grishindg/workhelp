@@ -1,31 +1,30 @@
 #Основной файл
-import sqlite3
+# import sqlite3
 import datetime as dt
 import tkinter as tk
 import locale
 from tkinter import ttk
 
-from funcs import TotEvents, dateRe
+from funcs import TotEvents, dateRe, DBwriter
 
 locale.setlocale(locale.LC_TIME, "ru_RU")
 
 PATH_TO_DB = './files/events.db'
 EXFILE = './files/events.xlsx'
-MONTH_N = ('январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь')
+
 WORKERS = ('Даниил', 'Влад', 'Андрей', 'Марина', 'Арсений', 'Ольга', 'Василий','Денис')
 
 class Fastman(tk.Frame):
 	def __init__(self, master):
 		super().__init__(master)
 		self.master = master
-		# self['bg'] = 'RED'
 
 		self.grid(column=0, row=0, sticky=(tk.N, tk.S, tk.E, tk.W), padx=5, pady=5)
 		self.columnconfigure(0, weight=1)
 		self.columnconfigure(1, weight=1)
 
 		#Переменные__________________________
-		self.textpos = 0 #номер строки
+		self.ev_id = 1 #внутренний id события, пока не используется
 		self.vTime = tk.StringVar()
 		self.vEvent = tk.StringVar()
 		self.vConsole = tk.StringVar()
@@ -38,17 +37,21 @@ class Fastman(tk.Frame):
 		self.listNamesEvents = [] #Переменная для полного списка имен, 
 		self.modyfListNamesEvents = [] #для присваивания vListOfEvents чтобы фильтровать список
 									   #чтобы не вытаскивать список из строки vListOfEvents
-		self.mainEventsArr = [] #Сюда скидывается список типовых событий из базы из базы данных
+		self.mainEventsArr = [] #Сюда скидывается список типовых событий из базы  данных
+
 		self.timeTable = [] # Созданное расписание
+		self.month_n = ('январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь')
+		self.dbWr = DBwriter(self, PATH_TO_DB)
 
 		self.create_widgets()
 		print('наполнение из базы')
-		self.db_import(PATH_TO_DB)
+		# self.db_import()
+		self.dbWr.db_import()
 
 	def create_widgets(self):
 		#Инициализация__________________
 
-		self.bNewEvent = tk.Button(self, text = 'Ебаш', command=self.store)
+		self.bNewEvent = tk.Button(self, text = 'Изменить', command=self.store)
 		self.eYear = tk.Entry(self, textvariable=self.vYear, width=4, takefocus=0)
 		self.eMonth = tk.Entry(self, textvariable=self.vMonth, width=4, takefocus=0)
 		self.eTime = tk.Entry(self, textvariable=self.vTime)
@@ -98,36 +101,12 @@ class Fastman(tk.Frame):
 		#бинды всего приложения
 		self.master.bind('<F2>', self.clearWorkers)
 		self.master.bind('<F1>', self.store)
-		self.master.bind('<F3>', self.storeDb)#пишем в базу данных
+		self.master.bind('<F3>', self.storeTTinDb)#пишем в базу данных
 		#функции по событиям__________________
-	def db_import(self, db):
-		"""Запускается при иниц, заполняет внутр список знач из базы"""
-		conn = sqlite3.connect(db)
-		curs = conn.cursor()
-		curs.execute('SELECT * FROM events')
-		self.mainEventsArr = curs.fetchall()
-		conn.close()
-		self.listNamesEvents = [x[0] for x in self.mainEventsArr]
-		self.vListOfEvents.set(self.listNamesEvents[:])
-		self.modyfListNamesEvents = self.listNamesEvents[:] #Должен быть копией, чтобы индексы соответсвовали
 
-	def storeDb(self, re=True):
+	def storeTTinDb(self, event):
+		self.dbWr.storeTTinDb()
 		'''Запись месяца в базу данных'''
-		conn = sqlite3.connect(PATH_TO_DB)
-		curs = conn.cursor()
-		table = MONTH_N[int(self.vMonth.get()-1)]
-		try:
-			curs.execute('CREATE TABLE {} (name TEXT, start REAL, finish REAL, members TEXT, notes TEXT)'.format(table))
-		except sqlite3.OperationalError:
-			print(f'Таблица {table} уже есть, будет дополнена')
-			# curs.execute('DELETE FROM {}'.format(table))
-		for ev in self.timeTable:
-			curs.execute('INSERT INTO {} VALUES ("{}", {}, {}, "{}", "{}")'.format(table, ev.name, ev.start.timestamp(), \
-																				   ev.finish.timestamp(), ev.members, ev.notes))
-		conn.commit()
-		conn.close()
-		print('Записано')
-
 
 		#События_______________________
 	def store(self, event=None):#None помогает разделить функционал между кнопкой и командой
@@ -174,7 +153,7 @@ class Fastman(tk.Frame):
 	def redrawtext(self):
 		'''Вывод в окно программы списка из tableText'''
 		self.tPole.delete('1.0', 'end')
-		tfrm = r'%a%d %H:%M'
+		tfrm = r'%a %d %H:%M'
 		r = 1
 		for ev in self.timeTable:
 			self.tPole.insert(f'{r}.0', f'({r}) {ev.start.strftime(tfrm)} '
