@@ -1,7 +1,7 @@
 #работает отдельно от fastman
 import sqlite3
 from openpyxl import load_workbook
-
+import datetime as dt
 
 PATH_TO_DB = './files/events.db'
 EXFILE = './files/events.xlsx'
@@ -33,6 +33,36 @@ def insert_todb(db, exfile):
 	conn.close()
 	wb.close()
 	print('база данных заполнена')
+
+def stats(db, table):
+	conn = sqlite3.connect(db)
+	curs = conn.cursor()
+	curs.execute('SELECT * FROM {}'.format(table))
+	rawarr = curs.fetchall()
+	conn.close()
+	from fastman import WORKERS
+	stat = []
+	holidays = []
+
+	for name in WORKERS:
+		days = list(range(8,31))
+		hours = 0
+		for ev in rawarr:
+			if name not in ev[3].split(' '):
+				continue
+			hours += (ev[2] - ev[1])/3600
+			day = dt.datetime.fromtimestamp(ev[1])
+			if day.day in days:
+				days.remove(day.day)
+		stat.append(hours)
+		holidays.append(days)
+
+	
+
+	for n, h, d in zip(WORKERS, stat, holidays):
+		print(n, h, d, len(d))
+
 if __name__ == '__main__':
 	# create_table(PATH_TO_DB)
-	insert_todb(PATH_TO_DB, EXFILE)
+	# insert_todb(PATH_TO_DB, EXFILE)
+	stats(PATH_TO_DB, 'сентябрь')
