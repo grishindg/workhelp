@@ -70,7 +70,6 @@ class SVGbuilder():
 			start = dt.datetime.fromtimestamp(ev.start)
 			finish = dt.datetime.fromtimestamp(ev.finish)
 
-
 			#отрисовка квадрата события
 			attr = self.stdEvAttrs.copy()
 			attr.update({'y': str(y)})
