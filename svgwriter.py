@@ -27,12 +27,12 @@ def db_loader(db, month):
 
 class SVGwriter():
 	def __init__(self):
-		self.root = ET.Element('svg', {'xmlns': r'http://www.w3.org/2000/svg', 'viewBox': '0 0 800 500'})
+		self.root = ET.Element('svg', {'xmlns': r'http://www.w3.org/2000/svg', 'viewBox': '0 0 530 500'})
 		self.specs = ('Школа Жен','Голубой Щенок', 'Ревизор', 'Кукла Для Невесты', 'Моя Прекрасная Леди', \
 					  'Волки И Овцы', 'Матросская Тишина', 'Катерина Ильвовна', 'Ловушка для Наследника', \
 					  'Чайка', 'И Никого Не Стало')
 		self.workers = ('Даниил', 'Влад', 'Андрей', 'Марина', 'Арсений', 'Ольга', 'Василий', 'Денис')
-		self.colmns = tuple((str(i) for i in range(203, 803, 75)))
+		self.colmns = tuple((str(i) for i in range(203, 523, 40)))
 		self.leftline = '30'
 		self.ev_name_x = '114'
 
@@ -44,7 +44,7 @@ class SVGwriter():
 		self.vb_height = 20
 
 
-		self.stdBzAttrs = {'width': '74', 'height': self.ev_h, 'rx': '5', 'ry': '5', 'fill': '#36383F'}
+		self.stdBzAttrs = {'width': '39', 'height': self.ev_h, 'rx': '5', 'ry': '5', 'fill': '#36383F'}
 		self.stdEvAttrs = {'x': self.leftline, 'width': self.ev_w, 'height': self.ev_h, 'rx': '5', 'ry': '5', 'stroke': '#36383F', 'fill': 'None'}
 		self.stdTxAttrs = {'font-size': '9', 'text-anchor': 'middle', 'font-family': 'sans-serif', 'fill': '#36383F'}
 
@@ -56,7 +56,7 @@ class SVGwriter():
 
 		#отрисовка имен
 		for name, x in zip(self.workers, self.colmns):
-			attr = {'x': str(int(x)+37), 'y': '18.5', 'fill': '#36383F'}
+			attr = {'x': str(int(x)+19), 'y': '18.5', 'fill': '#36383F'}
 			attr.update(self.stdTxAttrs)
 			n = ET.SubElement(self.root, 'text', attr)
 			n.text = name
@@ -111,14 +111,14 @@ class SVGwriter():
 
 			y += 29
 
-		self.root.attrib.update({'viewBox': f'0 0 805 {y+40}'})
+		self.root.attrib.update({'viewBox': f'0 0 530 {y+40}'})
 		tree = ET.ElementTree(self.root)
 		tree.write('./files/image.svg', encoding="utf-8")
-		self.root = ET.Element('svg', {'xmlns': r'http://www.w3.org/2000/svg', 'viewBox': '0 0 800 500'})
+		self.root = ET.Element('svg', {'xmlns': r'http://www.w3.org/2000/svg', 'viewBox': '0 0 530 500'})
 		print('Изображение сохранено ')
 
 	def drawline(self, y, day=False):
-		attr = {'x1': '200', 'x2': '798', 'y1': str(y-1), 'y2': str(y-1), 'stroke': '#AAAAAA', 'fill': 'None', 'stroke-width': '0.5'}
+		attr = {'x1': '200', 'x2': '522', 'y1': str(y-1), 'y2': str(y-1), 'stroke': '#AAAAAA', 'fill': 'None', 'stroke-width': '0.5'}
 		if day:
 			attr.update({'stroke-width': '1', 'stroke': '#36383F', 'x1': '5'})
 		ET.SubElement(self.root, 'line', attr)
@@ -128,6 +128,8 @@ class SVGwriter():
 		attr = {'y': str(y), 'x': self.colmns[index]}
 		attr.update(self.stdBzAttrs)
 		ET.SubElement(self.root, 'rect', attr)
+
+
 
 def main():
 	arr = db_loader(PATH_TO_DB, 'сентябрь')

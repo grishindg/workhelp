@@ -28,16 +28,18 @@ class Fastman(tk.Frame):
 
 		#Переменные__________________________
 		
-		self.vId = tk.IntVar(value=0) #внутренний id события, пока не используется
-		self.maxId = 0
+		self.vID = tk.IntVar(value=0) #внутренний id события, пока не используется
+		self.lastID = 0 #Последний записанный id, перед присвоением его надо увеличить
 
 		self.vTime = tk.StringVar()
 		self.vEvent = tk.StringVar()
-		# self.vConsole = tk.StringVar()
+
 
 		self.vYear = tk.IntVar(value=2020)
-		self.vMonth = tk.IntVar(value=8)
-	
+		# self.vMonth = tk.IntVar(value=8) #Будет отменена
+
+		self.vNameOfMonth = tk.StringVar() #переменная для списка имен месяцев
+
 		self.vListOfEvents = tk.StringVar() #Для Listboxа
 	
 		self.listNamesEvents = [] #Переменная для полного списка имен, 
@@ -63,16 +65,22 @@ class Fastman(tk.Frame):
 		self.frWorkers = tk.Frame(self)
 
 		self.lManual = tk.Label(self, anchor='nw', justify='left',
-								text='F1 запись\nF2 оч участ')
-		self.eId = tk.Entry(self, width = 3, textvariable=self.vId)
+								text='F1 запись  F3 загрузить\nF2 оч участ\nF5 сохр SVG')
+		self.eID = tk.Entry(self, width = 3, textvariable=self.vID, state='disable')
 
 		self.eYear = tk.Entry(self.frYrMn, textvariable=self.vYear, width=4, takefocus=0)
-		self.eMonth = tk.Entry(self.frYrMn, textvariable=self.vMonth, width=4, takefocus=0)
-		self.eTime = tk.Entry(self.frYrMn, width = 12, textvariable=self.vTime)
+		# self.eMonth = tk.Entry(self.frYrMn, textvariable=self.vMonth, width=4, takefocus=0)
+		self.eTime = tk.Entry(self.frYrMn, width = 15, textvariable=self.vTime)
 		self.eEvent = tk.Entry(self, width = 50, textvariable=self.vEvent)
 		self.lWorkers = tk.Label(self, text = 'Работники')
 		self.lbEvents = tk.Listbox(self, height=4, width=50, listvariable=self.vListOfEvents)
-		
+		self.cbMonth = ttk.Combobox(self.frYrMn, textvariable=self.vNameOfMonth, width=10,
+								    takefocus=0, state='readonly',
+									values=('январь', 'февраль', 'март', 'апрель',
+											'май', 'июнь', 'июль', 'август',
+											'сентябрь', 'октябрь', 'ноябрь', 'декабрь'))
+		self.cbMonth.current(0)
+
 		self.tCnsl = tk.Text(self, width=60, height=10, takefocus=0)
 
 		self.chWorkers = []
@@ -92,13 +100,15 @@ class Fastman(tk.Frame):
 		self.frYrMn.grid(row = 0, column = 1, sticky=tk.E)
 		self.frWorkers.grid(row=1, column=3, rowspan=3, sticky=tk.NW)
 
-		self.lManual.grid(row=1, column=0, sticky=tk.W)
+		self.lManual.grid(row=1, column=0, columnspan=2, sticky=tk.W)
 
-		self.eId.grid(row=0, column=0, sticky=tk.W)
-		self.eMonth.grid(row=0, column=1, sticky=tk.E)
+		self.eID.grid(row=0, column=0, sticky=tk.W)
+		# self.eMonth.grid(row=0, column=1, sticky=tk.E)
 		self.eYear.grid(row=0, column=0, sticky=tk.E)
 		self.lbEvents.grid(row=1, column=2, sticky=tk.E)
 		self.eTime.grid(row=0, column=3, sticky=tk.E)
+
+		self.cbMonth.grid(row=0, column=1, sticky=tk.E)
 		# self.lConsole.grid(row=1, column=1, sticky=tk.NE)
 
 		self.lWorkers.grid(row=0, column=3)
@@ -117,8 +127,51 @@ class Fastman(tk.Frame):
 		#бинды всего приложения
 		self.master.bind('<F2>', self.clearWorkers)
 		self.master.bind('<F1>', self.store)
-		# self.master.bind('<F3>', self.storeTTinDb)#пишем в базу данных
-		#функции по событиям__________________
+		self.cbMonth.bind('<<ComboboxSelected>>', self.callCB)
+		self.master.bind('<F5>', self.saveSVG)
+		self.master.bind('<F3>', self.loadEvent)
+		#Функции по событиям и нет______
+
+	def callCB(self, event):
+		month = self.vNameOfMonth.get()
+		if self.dbWr.checkTable(month):
+
+			self.lastID = self.dbWr.getMaxId(month)
+			self.eID['state']= 'normal'
+			#вывод в консоль
+			temp_arr = self.dbWr.loadShortList(month)
+			temp_arr.reverse()
+			self.toConsole( '-----------------------------')
+			for ev in temp_arr:
+				start = dt.datetime.fromtimestamp(ev[1])
+				start = start.strftime('%a %d')
+				self.toConsole( f'{ev[0]} {start} {ev[2]}')
+			self.toConsole( '-----------------------------')
+			self.toConsole( f'месяц {month} есть в базе, lastID установлен в {self.lastID}')
+		else:
+			self.eID['state']= 'disable'
+			self.lastID = 0
+			self.toConsole( 'новый месяц, последний id установлен в 0')
+
+	def loadEvent(self, event):
+		temp_id = self.vID.get()
+		if not temp_id:
+			self.toConsole('-- ID события на нуле --')
+			return
+		ev = self.dbWr.loadEvByID(temp_id, self.vNameOfMonth.get())
+		if not ev:
+			self.toConsole('-- Такого ID нет --')
+			return
+
+		self.vEvent.set(ev.name)
+		members = ev.members.split(' ')
+		for name in members:
+			self.varWorkers[WORKERS.index(name)].set(1)
+		start = dt.datetime.fromtimestamp(ev.start)
+		finish = dt.datetime.fromtimestamp(ev.finish)
+		self.vTime.set(start.strftime('%d %H%M ') + finish.strftime('%d %H%M'))
+
+		self.toConsole('-- событие загружено --')
 
 	def loadTypeEvents(self):
 		self.mainEventsArr = self.dbWr.dbImportTypes()
@@ -127,12 +180,12 @@ class Fastman(tk.Frame):
 		self.modyfListNamesEvents = self.listNamesEvents[:]
 
 
-	def storeTTinDb(self, event):
-		self.dbWr.storeTTinDb()
-		'''Запись месяца в базу данных'''
+	# def storeTTinDb(self, event):
+	# 	self.dbWr.storeTTinDb()
+	# 	'''Запись месяца в базу данных'''
 
 		#События_______________________
-	def store(self, event):#None помогает разделить функционал между кнопкой и командой
+	def store(self, event):
 		'''Добавляем событие в список событий, по кнопке'''
 		#проверяем соответсвие времени
 		overh = False #если указано 24 часа, это переменная добавит день
@@ -140,7 +193,7 @@ class Fastman(tk.Frame):
 		traceddate = dateRe.fullmatch(time)
 		if not traceddate:
 			# print('НЕ ФОРМАТ ДАТЫ')
-			self.tCnsl.insert('1.0', 'Неверный формат даты\n')
+			self.toConsole( 'Неверный формат даты')
 			return
 		rawlist = traceddate.groups()
 		secnday = rawlist[2] if rawlist[2] else rawlist[0] #если не упомянут второй день, используется первый
@@ -152,11 +205,11 @@ class Fastman(tk.Frame):
 					   rawlist[2],
 					   new_fin)
 
-		start = dt.datetime(self.vYear.get(), self.vMonth.get(),
+		start = dt.datetime(self.vYear.get(), self.cbMonth.current()+1,
 							int(rawlist[0]),
 							int(rawlist[1][:-2]),
 							int(rawlist[1][-2:]))
-		finish = dt.datetime(self.vYear.get(), self.vMonth.get(),
+		finish = dt.datetime(self.vYear.get(), self.cbMonth.current()+1,
 							int(secnday),
 							int(rawlist[3][:-2]),
 							int(rawlist[3][-2:]))
@@ -168,24 +221,43 @@ class Fastman(tk.Frame):
 			if self.varWorkers[i].get():
 				members += ' ' + WORKERS[i]
 		members = members.strip()
+
 		ev = TotEvents(self.vEvent.get(), start, finish, members)
-		mess = self.dbWr.storeOneEv(ev, self.vMonth.get())
 
+		temp_id = self.vID.get()
+		if not temp_id:
+			#!!!!!!!!!!
+			self.lastID += 1
+			#!!!!!!!!!!
+			ev.evID = self.lastID
+			mess = self.dbWr.storeOneEv(ev, self.vNameOfMonth.get())
+			self.toConsole(mess)
+		else:
+			ev.evID = temp_id
+			mess = self.dbWr.updateOneEv(ev, self.vNameOfMonth.get())
+			mess =  'Событие обновлено' if mess else '-! НЕ ОБНОВЛЕНО !-'
+			self.toConsole(mess)
 
-		self.tCnsl.insert('1.0', mess)
-
-		self.svgWriter.saveSvg(self.dbWr.loadMonth(self.vMonth.get()))
 		self.clear()
 
-	def redrawtext(self):
-		'''Вывод в окно программы списка из tableText'''
-		self.tCnsl.delete('1.0', 'end')
-		tfrm = r'%a %d %H:%M'
-		r = 1
-		for ev in self.timeTable:
-			self.tCnsl.insert(f'{r}.0', f'({r}) {ev.start.strftime(tfrm)} '
-			 							f'{ev.finish.strftime(tfrm)} "{ev.name}" {ev.members}\n')
-			r+=1
+	def toConsole(self, text):
+		self.tCnsl.insert('1.0', text + '\n')
+
+	def saveSVG(self, event):
+		if self.dbWr.checkTable(self.vNameOfMonth.get()):
+			self.svgWriter.saveSvg(self.dbWr.loadMonth(self.vNameOfMonth.get()))
+			self.toConsole('Изображение сохраниено')
+
+
+	# def redrawtext(self):
+	# 	'''Вывод в окно программы списка из tableText'''
+	# 	self.tCnsl.delete('1.0', 'end')
+	# 	tfrm = r'%a %d %H:%M'
+	# 	r = 1
+	# 	for ev in self.timeTable:
+	# 		self.tCnsl.insert(f'{r}.0', f'({r}) {ev.start.strftime(tfrm)} '
+	# 		 							f'{ev.finish.strftime(tfrm)} "{ev.name}" {ev.members}\n')
+	# 		r+=1
 
 	def namesChange(self, event):
 		'''редактирует список событий'''
@@ -231,7 +303,7 @@ class Fastman(tk.Frame):
 		self.vEvent.set('')
 		self.vListOfEvents.set(self.listNamesEvents[:])
 		self.modyfListNamesEvents = self.listNamesEvents[:]
-		# self.vConsole.set('')
+		self.vID.set(0)
 		self.eEvent.focus_set()
 
 	def clearWorkers(self, event):
