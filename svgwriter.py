@@ -25,8 +25,8 @@ def db_loader(db, month):
 	return ev_arr
 
 
-class SVGbuilder():
-	def __init__(self, ev_arr):
+class SVGwriter():
+	def __init__(self):
 		self.root = ET.Element('svg', {'xmlns': r'http://www.w3.org/2000/svg', 'viewBox': '0 0 800 500'})
 		self.specs = ('Школа Жен','Голубой Щенок', 'Ревизор', 'Кукла Для Невесты', 'Моя Прекрасная Леди', \
 					  'Волки И Овцы', 'Матросская Тишина', 'Катерина Ильвовна', 'Ловушка для Наследника', \
@@ -43,13 +43,12 @@ class SVGbuilder():
 		self.vb_width = '800'
 		self.vb_height = 20
 
-		self.ev_arr = ev_arr #отсортированный лист событий TotEvents
 
 		self.stdBzAttrs = {'width': '74', 'height': self.ev_h, 'rx': '5', 'ry': '5', 'fill': '#36383F'}
 		self.stdEvAttrs = {'x': self.leftline, 'width': self.ev_w, 'height': self.ev_h, 'rx': '5', 'ry': '5', 'stroke': '#36383F', 'fill': 'None'}
 		self.stdTxAttrs = {'font-size': '9', 'text-anchor': 'middle', 'font-family': 'sans-serif', 'fill': '#36383F'}
 
-	def made_events(self):
+	def saveSvg(self, ev_arr):
 
 		locale.setlocale(locale.LC_TIME, "ru_RU")
 		tm_fr = r'%H:%M'
@@ -65,7 +64,7 @@ class SVGbuilder():
 		d = 0
 
 		y = 27
-		for ev in self.ev_arr:
+		for ev in ev_arr:
 
 			start = dt.datetime.fromtimestamp(ev.start)
 			finish = dt.datetime.fromtimestamp(ev.finish)
@@ -115,6 +114,7 @@ class SVGbuilder():
 		self.root.attrib.update({'viewBox': f'0 0 805 {y+40}'})
 		tree = ET.ElementTree(self.root)
 		tree.write('./files/image.svg', encoding="utf-8")
+		self.root = ET.Element('svg', {'xmlns': r'http://www.w3.org/2000/svg', 'viewBox': '0 0 800 500'})
 		print('Изображение сохранено ')
 
 	def drawline(self, y, day=False):
@@ -131,8 +131,8 @@ class SVGbuilder():
 
 def main():
 	arr = db_loader(PATH_TO_DB, 'сентябрь')
-	wr = SVGbuilder(arr)
-	wr.made_events()
+	wr = SVGwriter()
+	wr.saveSvg(arr)
 
 # def main():
 # 	self.root = ET.Element('svg', {'xmlns': r'http://www.w3.org/2000/svg', 'viewBox': '0 0 800 500'})

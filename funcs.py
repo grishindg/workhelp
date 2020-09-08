@@ -1,9 +1,12 @@
 import re
 import sqlite3
+
 dateRe = re.compile(r'([1-3]?\d) ((?:[0-1]?[0-9]|2[0-4])[0-5]\d) ((?:[1-3]?\d) )?((?:[0-1]?[0-9]|2[0-4])[0-5]\d)')
 
 class TotEvents():
 	def __init__(self, name, start, finish, members, notes = ''):
+		self.evId = 0
+		self.gcId = ''
 		self.name = name
 		self.start = start
 		self.finish = finish
@@ -12,32 +15,53 @@ class TotEvents():
 
 class DBwriter():
 	'''класс для работы с базой данных'''
-	def __init__(self, MF, db):
+	def __init__(self, db):
 		self.db = db
-		self.MF = MF
+		self.month_n = ('январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь')
 
-	def db_import(self):
+	def dbImportTypes(self):
 		conn = sqlite3.connect(self.db)
 		curs = conn.cursor()
 		curs.execute('SELECT * FROM events')
-		self.MF.mainEventsArr = curs.fetchall()
+		rawarr = curs.fetchall()
 		conn.close()
-		self.MF.listNamesEvents = [x[0] for x in self.MF.mainEventsArr]
-		self.MF.vListOfEvents.set(self.MF.listNamesEvents[:])
-		self.MF.modyfListNamesEvents = self.MF.listNamesEvents[:]
+		return rawarr
 
-	def storeTTinDb(self):
+	def storeOneEv(self, ev, month):
+		'''можно переделать на авт работу'''
+		mess = ''
 		conn = sqlite3.connect(self.db)
 		curs = conn.cursor()
-		table_name = self.MF.month_n[int(self.MF.vMonth.get()-1)]
+		table_name = self.month_n[int(month)-1]
 		try:
-			curs.execute('CREATE TABLE {} (name TEXT, start REAL, finish REAL, members TEXT, notes TEXT)'.format(table_name))
+			curs.execute('CREATE TABLE {} (name TEXT, start REAL, '
+						 'finish REAL, members TEXT, notes TEXT,'
+						 'evID INT PRIMARY KEY, glID TEXT)'.format(table_name))
 		except sqlite3.OperationalError:
-			print(f'Таблица {table_name} уже есть, будет дополнена')
-			# curs.execute('DELETE FROM {}'.format(table))
-		for ev in self.MF.timeTable:
-			curs.execute('INSERT INTO {} VALUES ("{}", {}, {}, "{}", "{}")'.format(table_name, ev.name, ev.start.timestamp(), \
-																				   ev.finish.timestamp(), ev.members, ev.notes))
+			mess += f'Таблица {table_name} уже есть, будет дополнена\n'
+		curs.execute('INSERT INTO {} (name, start, finish, members) '
+					 'VALUES ("{}", {}, {}, "{}")'.format(table_name, ev.name,
+					 									  ev.start.timestamp(),
+					 									  ev.finish.timestamp(),
+					 									  ev.members))
 		conn.commit()
 		conn.close()
-		print('Записано')
+		mess += f'событие {ev.name} записано\n'
+		return mess
+
+	def loadMonth(self, month):
+		'''Возвращает отсортированный список Tot Events'''
+		conn = sqlite3.connect(self.db)
+		curs = conn.cursor()
+		table_name = self.month_n[int(month)-1]
+		curs.execute('SELECT name, start, finish, members FROM {}'.format(table_name))
+		rawarr = curs.fetchall()
+		conn.close()
+		ev_arr = []
+		for ev in rawarr:
+			ev_arr.append(TotEvents(*ev))
+		ev_arr.sort(key=self.forsort)
+		return ev_arr
+
+	def forsort(self, obj):
+		return obj.start

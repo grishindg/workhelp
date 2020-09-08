@@ -5,6 +5,8 @@ import tkinter as tk
 import locale
 from tkinter import ttk
 
+from svgwriter import SVGwriter
+
 from funcs import TotEvents, dateRe, DBwriter
 
 locale.setlocale(locale.LC_TIME, "ru_RU")
@@ -20,14 +22,18 @@ class Fastman(tk.Frame):
 		self.master = master
 
 		self.grid(column=0, row=0, sticky=(tk.N, tk.S, tk.E, tk.W), padx=5, pady=5)
-		self.columnconfigure(0, weight=1)
-		self.columnconfigure(1, weight=1)
+		# self.grid(column=0, row=0, padx=5, pady=5)
+		# self.columnconfigure(0, weight=1)
+		self.columnconfigure(2, weight=1)
 
 		#Переменные__________________________
-		self.ev_id = 1 #внутренний id события, пока не используется
+		
+		self.vId = tk.IntVar(value=0) #внутренний id события, пока не используется
+		self.maxId = 0
+
 		self.vTime = tk.StringVar()
 		self.vEvent = tk.StringVar()
-		self.vConsole = tk.StringVar()
+		# self.vConsole = tk.StringVar()
 
 		self.vYear = tk.IntVar(value=2020)
 		self.vMonth = tk.IntVar(value=8)
@@ -39,29 +45,35 @@ class Fastman(tk.Frame):
 									   #чтобы не вытаскивать список из строки vListOfEvents
 		self.mainEventsArr = [] #Сюда скидывается список типовых событий из базы  данных
 
-		self.timeTable = [] # Созданное расписание
-		self.month_n = ('январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь')
-		self.dbWr = DBwriter(self, PATH_TO_DB)
+		# self.timeTable = [] # Созданное расписание
+	
+		self.dbWr = DBwriter(PATH_TO_DB)
+		self.svgWriter = SVGwriter()
 
+		#функции инициализации___________
+		self.loadTypeEvents()
 		self.create_widgets()
 		print('наполнение из базы')
-		# self.db_import()
-		self.dbWr.db_import()
+		
 
 	def create_widgets(self):
 		#Инициализация__________________
 
-		self.bNewEvent = tk.Button(self, text = 'Изменить', command=self.store)
-		self.eYear = tk.Entry(self, textvariable=self.vYear, width=4, takefocus=0)
-		self.eMonth = tk.Entry(self, textvariable=self.vMonth, width=4, takefocus=0)
-		self.eTime = tk.Entry(self, textvariable=self.vTime)
+		self.frYrMn = tk.Frame(self)
+		self.frWorkers = tk.Frame(self)
+
+		self.lManual = tk.Label(self, anchor='nw', justify='left',
+								text='F1 запись\nF2 оч участ')
+		self.eId = tk.Entry(self, width = 3, textvariable=self.vId)
+
+		self.eYear = tk.Entry(self.frYrMn, textvariable=self.vYear, width=4, takefocus=0)
+		self.eMonth = tk.Entry(self.frYrMn, textvariable=self.vMonth, width=4, takefocus=0)
+		self.eTime = tk.Entry(self.frYrMn, width = 12, textvariable=self.vTime)
 		self.eEvent = tk.Entry(self, width = 50, textvariable=self.vEvent)
 		self.lWorkers = tk.Label(self, text = 'Работники')
 		self.lbEvents = tk.Listbox(self, height=4, width=50, listvariable=self.vListOfEvents)
-		self.frWorkers = tk.Frame(self)
-		# self.somech = tk.Checkbutton(self.frWorkers, text='some')
-		self.lConsole = tk.Label(self, textvariable=self.vConsole)
-		self.tPole = tk.Text(self, width=80, takefocus=0)
+		
+		self.tCnsl = tk.Text(self, width=60, height=10, takefocus=0)
 
 		self.chWorkers = []
 		self.varWorkers = []
@@ -77,19 +89,23 @@ class Fastman(tk.Frame):
 			self.chWorkers.append(tempbt)
 
 		#Позиционирование________________
+		self.frYrMn.grid(row = 0, column = 1, sticky=tk.E)
+		self.frWorkers.grid(row=1, column=3, rowspan=3, sticky=tk.NW)
 
-		self.bNewEvent.grid(row = 0, column = 0, padx=5, pady=5, sticky=tk.W)
-		self.eMonth.grid(row=0, column=0, sticky=tk.E)
-		self.eYear.grid(row=1, column=0, sticky=tk.NE)
-		self.lbEvents.grid(row=1, column=2)
-		self.eTime.grid(row=0, column=1, sticky=tk.E)
-		self.lConsole.grid(row=1, column=1, sticky=tk.NE)
+		self.lManual.grid(row=1, column=0, sticky=tk.W)
+
+		self.eId.grid(row=0, column=0, sticky=tk.W)
+		self.eMonth.grid(row=0, column=1, sticky=tk.E)
+		self.eYear.grid(row=0, column=0, sticky=tk.E)
+		self.lbEvents.grid(row=1, column=2, sticky=tk.E)
+		self.eTime.grid(row=0, column=3, sticky=tk.E)
+		# self.lConsole.grid(row=1, column=1, sticky=tk.NE)
 
 		self.lWorkers.grid(row=0, column=3)
 
-		self.eEvent.grid(row=0, column=2)
-		self.frWorkers.grid(row=1, column=3, rowspan=3, sticky=tk.NW)
-		self.tPole.grid(row=2, column=0, rowspan=2, columnspan=3)
+		self.eEvent.grid(row=0, column=2, sticky=tk.E)
+
+		self.tCnsl.grid(row=2, column=0, rowspan=2, columnspan=3, sticky=tk.W+tk.E)
 
 
 
@@ -101,15 +117,22 @@ class Fastman(tk.Frame):
 		#бинды всего приложения
 		self.master.bind('<F2>', self.clearWorkers)
 		self.master.bind('<F1>', self.store)
-		self.master.bind('<F3>', self.storeTTinDb)#пишем в базу данных
+		# self.master.bind('<F3>', self.storeTTinDb)#пишем в базу данных
 		#функции по событиям__________________
+
+	def loadTypeEvents(self):
+		self.mainEventsArr = self.dbWr.dbImportTypes()
+		self.listNamesEvents = [x[0] for x in self.mainEventsArr]
+		self.vListOfEvents.set(self.listNamesEvents[:])
+		self.modyfListNamesEvents = self.listNamesEvents[:]
+
 
 	def storeTTinDb(self, event):
 		self.dbWr.storeTTinDb()
 		'''Запись месяца в базу данных'''
 
 		#События_______________________
-	def store(self, event=None):#None помогает разделить функционал между кнопкой и командой
+	def store(self, event):#None помогает разделить функционал между кнопкой и командой
 		'''Добавляем событие в список событий, по кнопке'''
 		#проверяем соответсвие времени
 		overh = False #если указано 24 часа, это переменная добавит день
@@ -117,7 +140,7 @@ class Fastman(tk.Frame):
 		traceddate = dateRe.fullmatch(time)
 		if not traceddate:
 			# print('НЕ ФОРМАТ ДАТЫ')
-			self.vConsole.set('Неверный формат даты')
+			self.tCnsl.insert('1.0', 'Неверный формат даты\n')
 			return
 		rawlist = traceddate.groups()
 		secnday = rawlist[2] if rawlist[2] else rawlist[0] #если не упомянут второй день, используется первый
@@ -145,18 +168,22 @@ class Fastman(tk.Frame):
 			if self.varWorkers[i].get():
 				members += ' ' + WORKERS[i]
 		members = members.strip()
+		ev = TotEvents(self.vEvent.get(), start, finish, members)
+		mess = self.dbWr.storeOneEv(ev, self.vMonth.get())
 
-		self.timeTable.append(TotEvents(self.vEvent.get(), start, finish, members))
-		self.redrawtext()
+
+		self.tCnsl.insert('1.0', mess)
+
+		self.svgWriter.saveSvg(self.dbWr.loadMonth(self.vMonth.get()))
 		self.clear()
 
 	def redrawtext(self):
 		'''Вывод в окно программы списка из tableText'''
-		self.tPole.delete('1.0', 'end')
+		self.tCnsl.delete('1.0', 'end')
 		tfrm = r'%a %d %H:%M'
 		r = 1
 		for ev in self.timeTable:
-			self.tPole.insert(f'{r}.0', f'({r}) {ev.start.strftime(tfrm)} '
+			self.tCnsl.insert(f'{r}.0', f'({r}) {ev.start.strftime(tfrm)} '
 			 							f'{ev.finish.strftime(tfrm)} "{ev.name}" {ev.members}\n')
 			r+=1
 
@@ -204,7 +231,7 @@ class Fastman(tk.Frame):
 		self.vEvent.set('')
 		self.vListOfEvents.set(self.listNamesEvents[:])
 		self.modyfListNamesEvents = self.listNamesEvents[:]
-		self.vConsole.set('')
+		# self.vConsole.set('')
 		self.eEvent.focus_set()
 
 	def clearWorkers(self, event):

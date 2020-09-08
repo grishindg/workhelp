@@ -62,7 +62,25 @@ def stats(db, table):
 	for n, h, d in zip(WORKERS, stat, holidays):
 		print(n, h, d, len(d))
 
+def rebuilderDB(db, table):
+		conn = sqlite3.connect(db)
+		curs = conn.cursor()
+		curs.execute('SELECT * FROM {}'.format(table))
+		rawarr  = curs.fetchall()
+		ev_id = 1
+		curs.execute('CREATE TABLE сентябрь2 (name TEXT, start REAL, '
+					 'finish REAL, members TEXT, notes TEXT,'
+					 'evID INT PRIMARY KEY, glID TEXT)')
+		for ev in rawarr:
+			curs.execute('INSERT INTO сентябрь2 (name, start, finish, members, evID) '
+			 			 'VALUES ("{}", {}, {}, "{}", {})'.format(ev[0], ev[1], ev[2], ev[3], ev_id))
+			ev_id += 1
+		conn.commit()
+		conn.close()
+		print('готово')
+
 if __name__ == '__main__':
 	# create_table(PATH_TO_DB)
 	# insert_todb(PATH_TO_DB, EXFILE)
-	stats(PATH_TO_DB, 'сентябрь')
+	# stats(PATH_TO_DB, 'сентябрь')
+	rebuilderDB(PATH_TO_DB, 'сентябрь')
