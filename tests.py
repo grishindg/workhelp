@@ -1,4 +1,4 @@
-# import re
+import datetime as dt
 # #3 1200 2400 // 3 2200 4 1200
 # t = re.compile(r'[1-3]?\d (?:[0-1]?[0-9]|2[0-4])[0-5]\d (?:[1-3]?\d )?(?:[0-1]?[0-9]|2[0-4])[0-5]\d')
 # #                число     время 800 или 0800    59макс    возможн другой день и тоже самое 
@@ -20,9 +20,10 @@
 # 	else:
 # 		print('не полное соответсвие')
 def timetest():
-	import datetime as dt
-	d = dt.datetime(year=2020, month=9, day=12)
-	t = d.timestamp()
-	print(d.day, type(d.day))
+	tzi = dt.timezone(dt.timedelta(hours=3))
+	d = dt.datetime.now(tz=tzi)
+
+	print(d.isoformat())
+
 if __name__ == '__main__':
 	timetest()
