@@ -21,9 +21,13 @@ import datetime as dt
 # 		print('не полное соответсвие')
 def timetest():
 	tzi = dt.timezone(dt.timedelta(hours=3))
-	d = dt.datetime.now(tz=tzi)
+	d = dt.datetime(year=2020, month=9, day=12, hour=12, tzinfo=tzi)
+	d2 = dt.datetime(year=2020, month=9, day=12, hour=12)
+	t = d.timestamp()
+	t2 = d2.timestamp()
+	print(t, t2, t == t2, d.isoformat(), d2.isoformat())
+	
 
-	print(d.isoformat())
 
 if __name__ == '__main__':
 	timetest()

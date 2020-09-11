@@ -41,20 +41,33 @@ def main():
 			pickle.dump(creds, token)
 
 	service = build('calendar', 'v3', credentials=creds)
+
+
 	tzi = dt.timezone(dt.timedelta(hours=3))
 	hr = dt.timedelta(hours=1)
-	startdt = dt.datetime.now(tzi) + hr
+	startdt = dt.datetime(year=2020, month=9, day=12, hour=12, tzinfo=tzi)
 	finishdt = startdt + hr
-	body_ev = {'summary': 'Тестовое событие',
+
+
+
+	body_ev = {'summary': 'Тестовое событие2 ',
 			'start': {'dateTime': startdt.isoformat()},
-			'end':  {'dateTime': finishdt.isoformat()},
+			'end': {'dateTime': finishdt.isoformat()},
 			'attendees': [{'email': 'tabakovlight@gmail.com',},]
 		   }
+
+
+
 	totid = '3b30rdt7apium4ruf2bt4st2jo@group.calendar.google.com'
 
 	event = service.events().insert(calendarId=totid, body=body_ev).execute()
 
-	print('скрипт завершен', event)
+	# event = service.events().get(calendarId=totid, eventId=ev_id).execute()
+
+
+	print(event)
+
+
 if __name__ == '__main__':
 	main()
 	# pass
