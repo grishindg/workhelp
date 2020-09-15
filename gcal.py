@@ -10,11 +10,19 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 
 
-SCOPES = ['https://www.googleapis.com/auth/calendar.readonly',
-		  'https://www.googleapis.com/auth/calendar.events']
 
 
-def main():
+
+def getGservice():
+	SCOPES = ['https://www.googleapis.com/auth/calendar.readonly',
+		  	  'https://www.googleapis.com/auth/calendar.events']
+
+	tempEvBody = {'summary': '',
+			   'start': {'dateTime': ''},
+			   'end': {'dateTime': ''},
+			   'attendees': [{'email': '',},]
+			   }
+
 	"""Shows basic usage of the Google Calendar API.
 	Prints the start and name of the next 10 events on the user's calendar.
 	"""
@@ -42,6 +50,7 @@ def main():
 
 	service = build('calendar', 'v3', credentials=creds)
 
+	return service
 
 	tzi = dt.timezone(dt.timedelta(hours=3))
 	hr = dt.timedelta(hours=1)
@@ -50,11 +59,7 @@ def main():
 
 
 
-	body_ev = {'summary': 'Тестовое событие2 ',
-			'start': {'dateTime': startdt.isoformat()},
-			'end': {'dateTime': finishdt.isoformat()},
-			'attendees': [{'email': 'tabakovlight@gmail.com',},]
-		   }
+
 
 
 
@@ -69,5 +74,5 @@ def main():
 
 
 if __name__ == '__main__':
-	main()
-	# pass
+	# main()
+	pass

@@ -67,14 +67,14 @@ def rebuilderDB(db, table):
 		curs = conn.cursor()
 		curs.execute('SELECT * FROM {}'.format(table))
 		rawarr  = curs.fetchall()
-		ev_id = 1
-		curs.execute('CREATE TABLE сентябрь2 (name TEXT, start REAL, '
+		# ev_id = 1
+		curs.execute('CREATE TABLE сентябрьN (name TEXT, start REAL, '
 					 'finish REAL, members TEXT, notes TEXT,'
-					 'evID INT PRIMARY KEY, glID TEXT)')
+					 'evID INT PRIMARY KEY, glID TEXT, updated TEXT)')
 		for ev in rawarr:
-			curs.execute('INSERT INTO сентябрь2 (name, start, finish, members, evID) '
-			 			 'VALUES ("{}", {}, {}, "{}", {})'.format(ev[0], ev[1], ev[2], ev[3], ev_id))
-			ev_id += 1
+			curs.execute('INSERT INTO сентябрьN (name, start, finish, members, evID) '
+			 			 'VALUES ("{}", {}, {}, "{}", {})'.format(ev[0], ev[1], ev[2], ev[3], ev[5]))
+			# ev_id += 1
 		conn.commit()
 		conn.close()
 		print('готово')

@@ -7,14 +7,14 @@ from tkinter import ttk
 
 from svgwriter import SVGwriter
 
-from funcs import TotEvents, dateRe, DBwriter
+from funcs import TotEvents, dateRe, DBwriter, SynWithGoogle, WORKERS, EMAILS
 
 locale.setlocale(locale.LC_TIME, "ru_RU")
 
 PATH_TO_DB = './files/events.db'
 EXFILE = './files/events.xlsx'
 
-WORKERS = ('Даниил', 'Влад', 'Андрей', 'Марина', 'Арсений', 'Ольга', 'Василий','Денис')
+
 
 class Fastman(tk.Frame):
 	def __init__(self, master):
@@ -85,6 +85,7 @@ class Fastman(tk.Frame):
 
 		self.chWorkers = []
 		self.varWorkers = []
+
 		for i in range(len(WORKERS)):
 			tempvar = tk.BooleanVar()
 			tempvar.set(0)
@@ -129,7 +130,9 @@ class Fastman(tk.Frame):
 		self.master.bind('<F1>', self.store)
 		self.cbMonth.bind('<<ComboboxSelected>>', self.callCB)
 		self.master.bind('<F5>', self.saveSVG)
-		self.master.bind('<F3>', self.loadEvent)
+		self.master.bind('<F3>', self.loadEvent) 
+		self.master.bind('<F10>', self.synWithGoogle)
+
 		#Функции по событиям и нет______
 
 	def callCB(self, event):
@@ -174,6 +177,7 @@ class Fastman(tk.Frame):
 		self.toConsole('-- событие загружено --')
 
 	def loadTypeEvents(self):
+		'''при инициализации заполняет список для Лисбокса типовых спектакль'''
 		self.mainEventsArr = self.dbWr.dbImportTypes()
 		self.listNamesEvents = [x[0] for x in self.mainEventsArr]
 		self.vListOfEvents.set(self.listNamesEvents[:])
@@ -186,7 +190,7 @@ class Fastman(tk.Frame):
 
 		#События_______________________
 	def store(self, event):
-		'''Добавляем событие в список событий, по кнопке'''
+		'''Добавляем событие в список событий (в локальную базу), по кнопке'''
 		#проверяем соответсвие времени
 		overh = False #если указано 24 часа, это переменная добавит день
 		time = self.eTime.get()
@@ -248,19 +252,8 @@ class Fastman(tk.Frame):
 			self.svgWriter.saveSvg(self.dbWr.loadMonth(self.vNameOfMonth.get()))
 			self.toConsole('Изображение сохраниено')
 
-
-	# def redrawtext(self):
-	# 	'''Вывод в окно программы списка из tableText'''
-	# 	self.tCnsl.delete('1.0', 'end')
-	# 	tfrm = r'%a %d %H:%M'
-	# 	r = 1
-	# 	for ev in self.timeTable:
-	# 		self.tCnsl.insert(f'{r}.0', f'({r}) {ev.start.strftime(tfrm)} '
-	# 		 							f'{ev.finish.strftime(tfrm)} "{ev.name}" {ev.members}\n')
-	# 		r+=1
-
 	def namesChange(self, event):
-		'''редактирует список событий'''
+		'''редактирует список событий в момент набора (автодополнение)'''
 		tempt = self.vEvent.get()
 		if not tempt:
 			self.vListOfEvents.set(self.listNamesEvents[:])
@@ -275,7 +268,7 @@ class Fastman(tk.Frame):
 		self.lbEvents.select_set(0)
 
 	def applyEvent(self, event):
-		'''Когда выбано собыите, по клавише Enter заполняются данные'''
+		'''Когда выбрано собыите, по клавише Enter заполняются данные'''
 		tempind = self.lbEvents.curselection()
 		if len(tempind) == 0:
 			print('Ничего не выбрано')
@@ -296,6 +289,7 @@ class Fastman(tk.Frame):
 
 
 	def clear(self):
+		'''очищает все кроме '''
 		for ch in self.chWorkers:
 			ch['bg'] = 'SystemButtonFace'
 
@@ -309,6 +303,20 @@ class Fastman(tk.Frame):
 	def clearWorkers(self, event):
 		for w in self.varWorkers:
 			w.set(0)
+
+	def synWithGoogle(self, event):
+		synher = SynWithGoogle(self.toConsole)
+		# 1 Проверяем есть ли новые события и если есть пишем в гугл
+		newEvnts = self.dbWr.getCreatedEvents(self.vNameOfMonth.get())
+		for ev in newEvnts:
+			self.toConsole(f'{ev.name} {ev.evID}')
+			glEv = synher.newEvToGl(ev)
+			self.toConsole('--обновление ЛОК БАЗЫ не производится--')
+			self.toConsole(f"glID - {glEv['summary']} {glEv['updated']}")
+			with open('./files/tempEv.txt', 'w') as f:
+				f.write(str(glEv))
+		print(newEvnts)
+
 
 def main():
 	root  = tk.Tk()	
