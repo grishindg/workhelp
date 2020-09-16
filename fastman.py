@@ -305,17 +305,44 @@ class Fastman(tk.Frame):
 			w.set(0)
 
 	def synWithGoogle(self, event):
+		'''функция синхронизации, делает всё'''
 		synher = SynWithGoogle(self.toConsole)
 		# 1 Проверяем есть ли новые события и если есть пишем в гугл
 		newEvnts = self.dbWr.getCreatedEvents(self.vNameOfMonth.get())
+		self.toConsole('-- поиск новых событий в ЛБД --')
+		cn = 0
 		for ev in newEvnts:
 			self.toConsole(f'{ev.name} {ev.evID}')
 			glEv = synher.newEvToGl(ev)
-			self.toConsole('--обновление ЛОК БАЗЫ не производится--')
-			self.toConsole(f"glID - {glEv['summary']} {glEv['updated']}")
-			with open('./files/tempEv.txt', 'w') as f:
-				f.write(str(glEv))
-		print(newEvnts)
+			new_ev = ev.copy()
+			new_ev.glD = glEv['id']
+			new_ev.updated = glEv['updated']
+			mess = self.dbWr.store_glID(new_ev, self.vNameOfMonth.get())
+			self.toConsole(f'пишем {new_ev.evID} {new_ev.name} {new_ev.glID} статус - {mess}')
+			cn += 1
+		self.toConsole(f'-- получено {cn} новых glID --')
+
+		# 2 Выгружаем месяц
+		self.toConsole('-- выгрузка месяца из gl и локальной БД --')
+		glEvents = synher.getMonth(self.vNameOfMonth.get())
+		lbEvents = self.dbWr.loadMonth(self.vNameOfMonth.get())
+		lbIDs = {lb_ev.glID for lb_ev in lbEvents}
+		# 3 Проверяем есть ли glID событие в локальной базе, поиск событий
+		#   созданный в калнедаре
+		self.toConsole('-- поиск событий созданных в G календаре --')
+		for glEv in glEvents:
+			if glEv['id'] not in lbIDs:
+				self.toConsole(f"--!! событие {glEv['summary']} создано в G календаре !!--")
+			else:
+				self.toConsole(f"-- событие {glEv['summary']} уже есть в ЛБД --")
+
+		self.toConsole('-------------')
+		self.toConsole('-- синхронизация завершена --')
+
+
+
+
+
 
 
 def main():

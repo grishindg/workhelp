@@ -26,8 +26,15 @@ def timetest():
 	t = d.timestamp()
 	t2 = d2.timestamp()
 	print(t, t2, t == t2, d.isoformat(), d2.isoformat())
-	
 
+def copTot():
+	from funcs import TotEvents
+	t1 = TotEvents('Name', 12131, 146545, 'иван марья')
+	t2 = t1.copy()
+	print(t1)
+	t1.name = 'Huluo'
+	t1.start = 0
+	print(t1, t2)
 
 if __name__ == '__main__':
-	timetest()
+	copTot()

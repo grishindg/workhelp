@@ -31,6 +31,18 @@ class TotEvents:
 		self.glID = glID
 		self.updated = updated
 
+	def __str__(self):
+		mess = 'TotEvent: ('
+		for i in self.__dict__.keys():
+			if self.__dict__[i]: mess = mess + str(self.__dict__[i]) + ' '
+		return mess + ')'
+
+	def copy(self):
+		return TotEvents(self.name, self.start, self.finish,
+						 self.members, self.notes, self.evID,
+						 self.glID, self.updated)
+
+
 class DBwriter:
 	'''класс для работы с базой данных'''
 	def __init__(self, db):
@@ -89,7 +101,7 @@ class DBwriter:
 		conn.close()
 		return mess
 
-	def storeglID(self, ev, table):
+	def store_glID(self, ev, table):
 		'''добавляет glID и updated в локальную базу после загрузки в гугл''' 
 		conn = sqlite3.connect(self.db)
 		curs = conn.cursor()
@@ -104,7 +116,7 @@ class DBwriter:
 		conn = sqlite3.connect(self.db)
 		curs = conn.cursor()
 		table_name = month
-		curs.execute('SELECT name, start, finish, members FROM {}'.format(table_name))
+		curs.execute('SELECT * FROM {}'.format(table_name))
 		rawarr = curs.fetchall()
 		conn.close()
 		ev_arr = []
@@ -156,6 +168,9 @@ class DBwriter:
 
 class SynWithGoogle:
 	def __init__(self, toConsole):
+		self.month_n = ('январь', 'февраль', 'март', 'апрель',
+						'май', 'июнь', 'июль', 'август',
+						'сентябрь', 'октябрь', 'ноябрь', 'декабрь')
 		self.tzi = dt.timezone(dt.timedelta(hours=3))
 		self.toConsole = toConsole
 		self.service = self.getGservice()
@@ -216,3 +231,11 @@ class SynWithGoogle:
 		event = self.service.events().insert(calendarId=self.totid, body=body).execute()
 		self.toConsole('-- новое событие добавлено в ggl --')
 		return event
+
+	def getMonth(self, month): #TODO сделать год
+		tmin = dt.datetime(2020, self.month_n.index(month)+1, 1, tzinfo=self.tzi)
+		tmax = dt.datetime(2020, self.month_n.index(month)+2, 1, tzinfo=self.tzi) + dt.timedelta(seconds=1)
+		events = self.service.events().list(calendarId=self.totid,
+											timeMin = tmin.isoformat(timespec='seconds'),
+											timeMax = tmax.isoformat(timespec='seconds')).execute()
+		return events['items']

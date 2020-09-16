@@ -50,7 +50,7 @@ def getGservice():
 
 	service = build('calendar', 'v3', credentials=creds)
 
-	return service
+	# return service
 
 	tzi = dt.timezone(dt.timedelta(hours=3))
 	hr = dt.timedelta(hours=1)
@@ -65,14 +65,28 @@ def getGservice():
 
 	totid = '3b30rdt7apium4ruf2bt4st2jo@group.calendar.google.com'
 
-	event = service.events().insert(calendarId=totid, body=body_ev).execute()
+	# event = service.events().insert(calendarId=totid, body=body_ev).execute()
+	testEvent='c125s76m33a2c7irf2rfqkm5jk'
+	# event = service.events().get(calendarId=totid, eventId=testEvent).execute()
+	month_n = ('январь', 'февраль', 'март', 'апрель',
+				'май', 'июнь', 'июль', 'август',
+				'сентябрь', 'октябрь', 'ноябрь', 'декабрь')
+	month = 'октябрь'
+	tmin = dt.datetime(2020, month_n.index(month)+1, 1, tzinfo=tzi)
+	tmax = dt.datetime(2020, month_n.index(month)+2, 1, tzinfo=tzi)
+	events = service.events().list(calendarId=totid, showDeleted=True,
+								   timeMin = tmin.isoformat(timespec='seconds'),
+								   timeMax = tmax.isoformat(timespec='seconds')).execute()
+	print(events.keys())
 
-	# event = service.events().get(calendarId=totid, eventId=ev_id).execute()
+	for event in events['items']:
+		print(event)
+		# print(event['summary'])
+		# print(event['description'])
 
 
-	print(event)
 
 
 if __name__ == '__main__':
-	# main()
-	pass
+	getGservice()
+	# pass
