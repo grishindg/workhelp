@@ -20,7 +20,7 @@ EMAILS = ('danja21dedkov@gmail.ru',
 
 
 class TotEvents:
-	def __init__(self, name, start, finish, members, notes = '', evID = 0, glID = '', updated = ''):
+	def __init__(self, name, start, finish, members = '', notes = '', evID = 0, glID = '', updated = ''):
 
 		self.name = name
 		self.start = start
@@ -67,6 +67,7 @@ class DBwriter:
 
 	def storeOneEv(self, ev, month):
 		'''можно переделать на авт работу'''
+		#ОЖИДАЕТ ВРЕМЯ В ФОРМАТЕ DATETIME
 		mess = ''
 		conn = sqlite3.connect(self.db)
 		curs = conn.cursor()
@@ -78,11 +79,15 @@ class DBwriter:
 			mess += f'ВНИМАНИЕ. Создана новая таблица {month} \n'
 
 
-		curs.execute('INSERT INTO {} (evID, name, start, finish, members) '
-					 'VALUES ({}, "{}", {}, {}, "{}")'.format(month, ev.evID, ev.name,
+		curs.execute('INSERT INTO {} '
+					 'VALUES ("{}", {}, {}, "{}", "{}", "{}", "{}", "{}")'.format(month, ev.name,
 					 									  ev.start.timestamp(),
 					 									  ev.finish.timestamp(),
-					 									  ev.members))
+					 									  ev.members,
+					 									  ev.notes,
+					 									  ev.evID,
+					 									  ev.glID,
+					 									  ev.updated))
 		conn.commit()
 		conn.close()
 		mess += f'событие {ev.evID} {ev.name} записано в {month}\n'
@@ -225,8 +230,9 @@ class SynWithGoogle:
 		finish = dt.datetime.fromtimestamp(ev.finish, tz = self.tzi)
 		body['start']['dateTime'] = start.isoformat(timespec='seconds')
 		body['end']['dateTime'] = finish.isoformat(timespec='seconds')
-		for i in ev.members.split(' '):
-			body['attendees'].append({'email':self.nameToMail[i]})
+		if ev.members:
+			for i in ev.members.split(' '):
+				body['attendees'].append({'email':self.nameToMail[i]})
 
 		event = self.service.events().insert(calendarId=self.totid, body=body).execute()
 		self.toConsole('-- новое событие добавлено в ggl --')

@@ -306,6 +306,8 @@ class Fastman(tk.Frame):
 
 	def synWithGoogle(self, event):
 		'''функция синхронизации, делает всё'''
+
+		mailToName = dict(zip(EMAILS, WORKERS))
 		synher = SynWithGoogle(self.toConsole)
 		# 1 Проверяем есть ли новые события и если есть пишем в гугл
 		newEvnts = self.dbWr.getCreatedEvents(self.vNameOfMonth.get())
@@ -315,7 +317,7 @@ class Fastman(tk.Frame):
 			self.toConsole(f'{ev.name} {ev.evID}')
 			glEv = synher.newEvToGl(ev)
 			new_ev = ev.copy()
-			new_ev.glD = glEv['id']
+			new_ev.glID = glEv['id']
 			new_ev.updated = glEv['updated']
 			mess = self.dbWr.store_glID(new_ev, self.vNameOfMonth.get())
 			self.toConsole(f'пишем {new_ev.evID} {new_ev.name} {new_ev.glID} статус - {mess}')
@@ -333,6 +335,28 @@ class Fastman(tk.Frame):
 		for glEv in glEvents:
 			if glEv['id'] not in lbIDs:
 				self.toConsole(f"--!! событие {glEv['summary']} создано в G календаре !!--")
+				# 3.1 Пишем событие в ЛБЗ
+				members = []
+				description = ''
+				if 'description' in glEv:
+					description = glEv['description']
+				if 'attendees' in glEv:
+					for em in glEv['attendees']:
+						members.append(mailToName[em['email']])
+
+				new_ev = TotEvents(glEv['summary'],
+								   dt.datetime.fromisoformat(glEv['start']['dateTime']),
+								   dt.datetime.fromisoformat(glEv['end']['dateTime']),
+								   ' '.join(members),
+								   description,
+								   self.lastID+1,
+								   glEv['id'],
+								   glEv['updated']
+								   )
+				self.dbWr.storeOneEv(new_ev, self.vNameOfMonth.get())
+
+				self.lastID+=1
+				self.toConsole(f'событие {new_ev.name} записано в ЛБЗ c id {new_ev.evID}')
 			else:
 				self.toConsole(f"-- событие {glEv['summary']} уже есть в ЛБД --")
 

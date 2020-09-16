@@ -36,5 +36,8 @@ def copTot():
 	t1.start = 0
 	print(t1, t2)
 
+def timetest2():
+	t = dt.datetime.fromisoformat('2020-09-16T12:33:58.000Z')
+	print(t)
 if __name__ == '__main__':
-	copTot()
+	timetest2()
