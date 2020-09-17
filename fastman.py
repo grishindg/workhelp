@@ -328,14 +328,14 @@ class Fastman(tk.Frame):
 		self.toConsole('-- выгрузка месяца из gl и локальной БД --')
 		glEvents = synher.getMonth(self.vNameOfMonth.get())
 		lbEvents = self.dbWr.loadMonth(self.vNameOfMonth.get())
-		lbIDs = {lb_ev.glID for lb_ev in lbEvents}
+		lbIDs = {lb_ev.glID: lb_ev for lb_ev in lbEvents} #словарь локлаьных событий для быстрого обращения к событию по glID
 		# 3 Проверяем есть ли glID событие в локальной базе, поиск событий
 		#   созданный в калнедаре
 		self.toConsole('-- поиск событий созданных в G календаре --')
 		for glEv in glEvents:
 			if glEv['id'] not in lbIDs:
 				self.toConsole(f"--!! событие {glEv['summary']} создано в G календаре !!--")
-				# 3.1 Пишем событие в ЛБЗ
+		# 3.1 Пишем событие в ЛБЗ
 				members = []
 				description = ''
 				if 'description' in glEv:
@@ -357,8 +357,20 @@ class Fastman(tk.Frame):
 
 				self.lastID+=1
 				self.toConsole(f'событие {new_ev.name} записано в ЛБЗ c id {new_ev.evID}')
+		# 4 сравниваем update
 			else:
 				self.toConsole(f"-- событие {glEv['summary']} уже есть в ЛБД --")
+				self.toConsole('сравниваем updated')
+				t_ldb = dt.datetime.fromisoformat( lbIDs[glEv['id']].updated[:-1] )
+				t_gldb = dt.datetime.fromisoformat( glEv['updated'][:-1] )
+				if t_gldb == t_ldb:
+					self.toConsole(f"события {glEv['summary']} одинаковы")
+					continue
+				elif t_gldb > t_ldb:
+					self.toConsole(f"--! событие {glEv['summary']} было обновлено в G календаре !--")
+				elif t_gldb < t_ldb:
+					self.toConsole(f"--! событие {glEv['summary']} в было обновлено локально !--")
+
 
 		self.toConsole('-------------')
 		self.toConsole('-- синхронизация завершена --')
