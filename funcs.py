@@ -81,26 +81,43 @@ class DBwriter:
 
 		curs.execute('INSERT INTO {} '
 					 'VALUES ("{}", {}, {}, "{}", "{}", "{}", "{}", "{}")'.format(month, ev.name,
-					 									  ev.start.timestamp(),
-					 									  ev.finish.timestamp(),
-					 									  ev.members,
-					 									  ev.notes,
-					 									  ev.evID,
-					 									  ev.glID,
-					 									  ev.updated))
+														  ev.start.timestamp(),
+														  ev.finish.timestamp(),
+														  ev.members,
+														  ev.notes,
+														  ev.evID,
+														  ev.glID,
+														  ev.updated))
 		conn.commit()
 		conn.close()
 		mess += f'событие {ev.evID} {ev.name} записано в {month}\n'
 		return mess
 
-	def updateOneEv(self, ev, table):#TODO сделать запись update c связи с google
+	def updateOneEv(self, ev, table, fromGcal=False):#TODO сделать запись update c связи с google
 		conn = sqlite3.connect(self.db)
 		curs = conn.cursor()
 
-		curs.execute('UPDATE {} SET name="{}", start={}, finish={}, members="{}" WHERE evID={}'.format(table, ev.name,
-					 																				ev.start.timestamp(),
-					 																				ev.finish.timestamp(),
-					 																				ev.members, ev.evID))
+		if not fromGcal: 
+			# локальное обновление не меняет gl id если он есть
+			updated = dt.datetime.now().isoformat(timespec='milliseconds') + 'Z'
+			curs.execute('UPDATE {} SET name="{}", start={}, finish={}, members="{}", notes="{}", updated="{}" WHERE evID={}'.format(table, ev.name,
+																										   ev.start.timestamp(),
+																										   ev.finish.timestamp(),
+																										   ev.members, ev.notes,
+																										   updated,
+																										   ev.evID))
+		else:
+			# Не меняется gl id, и lb id
+			print('применяется обновление из гугл')
+			curs.execute('UPDATE {} SET name="{}", start={}, finish={}, '
+						 'members="{}", notes="{}", updated = "{}" WHERE evID={}'.format(table, ev.name,
+																						 ev.start.timestamp(),
+																						 ev.finish.timestamp(),
+																						 ev.members,
+																						 ev.notes,
+																						 ev.updated,
+																						 ev.evID))
+
 		mess = curs.rowcount
 		conn.commit()
 		conn.close()
@@ -191,8 +208,8 @@ class SynWithGoogle:
 	def getGservice():
 		'''возвращает указатель на service'''
 		SCOPES = ['https://www.googleapis.com/auth/calendar.readonly',
-			  	  'https://www.googleapis.com/auth/calendar.events']
-			  	  
+				  'https://www.googleapis.com/auth/calendar.events']
+				  
 		"""Shows basic usage of the Google Calendar API.
 		Prints the start and name of the next 10 events on the user's calendar.
 		"""
@@ -245,3 +262,31 @@ class SynWithGoogle:
 											timeMin = tmin.isoformat(timespec='seconds'),
 											timeMax = tmax.isoformat(timespec='seconds')).execute()
 		return events['items']
+
+
+def transEv(event, mode='GtoL', evID=0):
+	'''перевод типособытия'''
+
+	mailToName = dict(zip(EMAILS, WORKERS))
+	nameToMail = dict(zip(WORKERS, EMAILS))
+	if mode == 'GtoL' and evID:
+		members = []
+		description = ''
+		if 'description' in event:
+			description = event['description']
+		if 'attendees' in event:
+			for em in event['attendees']:
+				members.append(mailToName[em['email']])
+
+		new_ev = TotEvents(event['summary'],
+						   dt.datetime.fromisoformat(event['start']['dateTime']),
+						   dt.datetime.fromisoformat(event['end']['dateTime']),
+						   ' '.join(members),
+						   description,
+						   evID, # строго необходимо указать
+						   event['id'],
+						   event['updated']
+						   )
+		return new_ev
+	else:
+		return None

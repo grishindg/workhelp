@@ -7,7 +7,7 @@ from tkinter import ttk
 
 from svgwriter import SVGwriter
 
-from funcs import TotEvents, dateRe, DBwriter, SynWithGoogle, WORKERS, EMAILS
+from funcs import TotEvents, dateRe, DBwriter, SynWithGoogle, WORKERS, EMAILS, transEv
 
 locale.setlocale(locale.LC_TIME, "ru_RU")
 
@@ -335,7 +335,8 @@ class Fastman(tk.Frame):
 		for glEv in glEvents:
 			if glEv['id'] not in lbIDs:
 				self.toConsole(f"--!! событие {glEv['summary']} создано в G календаре !!--")
-		# 3.1 Пишем событие в ЛБЗ
+		# 3.1 Пишем событие в ЛБЗ #TODO перевести в функцию transEv
+		# !!!!! ваниант в отдельную функцию
 				members = []
 				description = ''
 				if 'description' in glEv:
@@ -353,6 +354,8 @@ class Fastman(tk.Frame):
 								   glEv['id'],
 								   glEv['updated']
 								   )
+
+		# !!!!!!
 				self.dbWr.storeOneEv(new_ev, self.vNameOfMonth.get())
 
 				self.lastID+=1
@@ -363,13 +366,25 @@ class Fastman(tk.Frame):
 				self.toConsole('сравниваем updated')
 				t_ldb = dt.datetime.fromisoformat( lbIDs[glEv['id']].updated[:-1] )
 				t_gldb = dt.datetime.fromisoformat( glEv['updated'][:-1] )
+
 				if t_gldb == t_ldb:
 					self.toConsole(f"события {glEv['summary']} одинаковы")
 					continue
 				elif t_gldb > t_ldb:
 					self.toConsole(f"--! событие {glEv['summary']} было обновлено в G календаре !--")
+					upd_ev = transEv(glEv, evID = lbIDs[glEv['id']].evID)
+					self.dbWr.updateOneEv(upd_ev, self.vNameOfMonth.get(), fromGcal=True)
+
+					self.toConsole(f'событие {upd_ev.evID} {upd_ev.name} обновлено в лб из G кал')
+					# использовать функцию перевода объекта из gl в lb
+					# обновить lb
+					# transEv(glEv)
+
+
 				elif t_gldb < t_ldb:
 					self.toConsole(f"--! событие {glEv['summary']} в было обновлено локально !--")
+					# использовать функцию перевода из lb d gl
+					# обновить gl
 
 
 		self.toConsole('-------------')
