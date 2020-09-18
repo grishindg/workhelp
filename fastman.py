@@ -167,9 +167,16 @@ class Fastman(tk.Frame):
 			return
 
 		self.vEvent.set(ev.name)
+
+		# очищаем галочки участников, и если есть в событие, выставляем
+		self.clearWorkers()
 		members = ev.members.split(' ')
-		for name in members:
-			self.varWorkers[WORKERS.index(name)].set(1)
+		if ev.members:
+			for name in members:#TODO ОШИБКА!!
+				print(len(members))
+				print(name)
+				print(members)
+				self.varWorkers[WORKERS.index(name)].set(1)
 		start = dt.datetime.fromtimestamp(ev.start)
 		finish = dt.datetime.fromtimestamp(ev.finish)
 		self.vTime.set(start.strftime('%d %H%M ') + finish.strftime('%d %H%M'))
@@ -300,7 +307,7 @@ class Fastman(tk.Frame):
 		self.vID.set(0)
 		self.eEvent.focus_set()
 
-	def clearWorkers(self, event):
+	def clearWorkers(self, event=None):
 		for w in self.varWorkers:
 			w.set(0)
 
@@ -328,47 +335,31 @@ class Fastman(tk.Frame):
 		self.toConsole('-- выгрузка месяца из gl и локальной БД --')
 		glEvents = synher.getMonth(self.vNameOfMonth.get())
 		lbEvents = self.dbWr.loadMonth(self.vNameOfMonth.get())
-		lbIDs = {lb_ev.glID: lb_ev for lb_ev in lbEvents} #словарь локлаьных событий для быстрого обращения к событию по glID
+		lbIDs = {lb_ev.glID: lb_ev for lb_ev in lbEvents} #словарь локальных событий для быстрого обращения к событию по glID
 		# 3 Проверяем есть ли glID событие в локальной базе, поиск событий
 		#   созданный в калнедаре
 		self.toConsole('-- поиск событий созданных в G календаре --')
 		for glEv in glEvents:
 			if glEv['id'] not in lbIDs:
 				self.toConsole(f"--!! событие {glEv['summary']} создано в G календаре !!--")
+
 		# 3.1 Пишем событие в ЛБЗ #TODO перевести в функцию transEv
-		# !!!!! ваниант в отдельную функцию
-				members = []
-				description = ''
-				if 'description' in glEv:
-					description = glEv['description']
-				if 'attendees' in glEv:
-					for em in glEv['attendees']:
-						members.append(mailToName[em['email']])
 
-				new_ev = TotEvents(glEv['summary'],
-								   dt.datetime.fromisoformat(glEv['start']['dateTime']),
-								   dt.datetime.fromisoformat(glEv['end']['dateTime']),
-								   ' '.join(members),
-								   description,
-								   self.lastID+1,
-								   glEv['id'],
-								   glEv['updated']
-								   )
+				new_ev = transEv(glEv, evID = self.lastID+1)
 
-		# !!!!!!
 				self.dbWr.storeOneEv(new_ev, self.vNameOfMonth.get())
 
 				self.lastID+=1
 				self.toConsole(f'событие {new_ev.name} записано в ЛБЗ c id {new_ev.evID}')
 		# 4 сравниваем update
 			else:
-				self.toConsole(f"-- событие {glEv['summary']} уже есть в ЛБД --")
-				self.toConsole('сравниваем updated')
+				self.toConsole(f"-- событие {glEv['summary']} есть в лб --")
+				# self.toConsole('сравниваем updated')
 				t_ldb = dt.datetime.fromisoformat( lbIDs[glEv['id']].updated[:-1] )
 				t_gldb = dt.datetime.fromisoformat( glEv['updated'][:-1] )
 
 				if t_gldb == t_ldb:
-					self.toConsole(f"события {glEv['summary']} одинаковы")
+					# self.toConsole(f"события {glEv['summary']} одинаковы")
 					continue
 				elif t_gldb > t_ldb:
 					self.toConsole(f"--! событие {glEv['summary']} было обновлено в G календаре !--")
@@ -383,6 +374,17 @@ class Fastman(tk.Frame):
 
 				elif t_gldb < t_ldb:
 					self.toConsole(f"--! событие {glEv['summary']} в было обновлено локально !--")
+					new_ev = transEv(lbIDs[glEv['id']], mode='LtoG')
+
+					status = synher.updateOneEv(new_ev, glEv['id']) 
+					if not status:
+						self.toConsole('!!! не удалось прообдейтить в G кал !!!')
+						return
+					new_updated = status['updated']
+					self.toConsole(f'новое время апдейта от гугл {new_updated}')
+					mess = self.dbWr.updateUpdated(lbIDs[glEv['id']].evID, new_updated, self.vNameOfMonth.get())
+					self.toConsole(f'--! и update обновлен локально. статус - {mess} !--\n'
+						'--! Событие измененное локально, обновлено в G кал !--\n')
 					# использовать функцию перевода из lb d gl
 					# обновить gl
 

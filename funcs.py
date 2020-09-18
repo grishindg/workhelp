@@ -99,7 +99,7 @@ class DBwriter:
 
 		if not fromGcal: 
 			# локальное обновление не меняет gl id если он есть
-			updated = dt.datetime.now().isoformat(timespec='milliseconds') + 'Z'
+			updated = dt.datetime.utcnow().isoformat(timespec='milliseconds') + 'Z'
 			curs.execute('UPDATE {} SET name="{}", start={}, finish={}, members="{}", notes="{}", updated="{}" WHERE evID={}'.format(table, ev.name,
 																										   ev.start.timestamp(),
 																										   ev.finish.timestamp(),
@@ -118,6 +118,16 @@ class DBwriter:
 																						 ev.updated,
 																						 ev.evID))
 
+		mess = curs.rowcount
+		conn.commit()
+		conn.close()
+		return mess
+
+	def updateUpdated(self, evID, updated, table):
+		'''меняет updated изменненного ранее в лб события для для точного соответсвия с g кал'''
+		conn = sqlite3.connect(self.db)
+		curs = conn.cursor()
+		curs.execute('UPDATE {} SET updated="{}" WHERE evID={}'.format(table, updated, evID))
 		mess = curs.rowcount
 		conn.commit()
 		conn.close()
@@ -199,7 +209,8 @@ class SynWithGoogle:
 		self.tempEvBody = {'summary': '',
 						   'start': {'dateTime': ''},
 						   'end': {'dateTime': ''},
-						   'attendees': []
+						   'attendees': [],
+						   'reminders':{'useDefault':False}
 						   }
 		self.totid = '3b30rdt7apium4ruf2bt4st2jo@group.calendar.google.com'
 		self.nameToMail = dict(zip(WORKERS, EMAILS))
@@ -247,6 +258,8 @@ class SynWithGoogle:
 		finish = dt.datetime.fromtimestamp(ev.finish, tz = self.tzi)
 		body['start']['dateTime'] = start.isoformat(timespec='seconds')
 		body['end']['dateTime'] = finish.isoformat(timespec='seconds')
+		if ev.notes:
+			body.update({'description':ev.notes})
 		if ev.members:
 			for i in ev.members.split(' '):
 				body['attendees'].append({'email':self.nameToMail[i]})
@@ -254,6 +267,9 @@ class SynWithGoogle:
 		event = self.service.events().insert(calendarId=self.totid, body=body).execute()
 		self.toConsole('-- новое событие добавлено в ggl --')
 		return event
+
+	def updateOneEv(self, ev, glID):# можно переделать под внутреннее использование
+		return self.service.events().update(calendarId=self.totid, eventId=glID, body=ev).execute()
 
 	def getMonth(self, month): #TODO сделать год
 		tmin = dt.datetime(2020, self.month_n.index(month)+1, 1, tzinfo=self.tzi)
@@ -266,10 +282,16 @@ class SynWithGoogle:
 
 def transEv(event, mode='GtoL', evID=0):
 	'''перевод типособытия'''
-
+	tempEvBody = {'summary': '',
+				   'start': {'dateTime': ''},
+				   'end': {'dateTime': ''},
+				   'attendees': [],
+				 }
 	mailToName = dict(zip(EMAILS, WORKERS))
 	nameToMail = dict(zip(WORKERS, EMAILS))
+
 	if mode == 'GtoL' and evID:
+
 		members = []
 		description = ''
 		if 'description' in event:
@@ -288,5 +310,24 @@ def transEv(event, mode='GtoL', evID=0):
 						   event['updated']
 						   )
 		return new_ev
+
+	elif mode == 'LtoG' and not evID:
+
+		tzi = dt.timezone(dt.timedelta(hours=3))
+		body = tempEvBody.copy()
+		body.update({'sendUpdates':'none'})
+		body['summary'] = event.name
+		start = dt.datetime.fromtimestamp(event.start, tz = tzi)
+		finish = dt.datetime.fromtimestamp(event.finish, tz = tzi)
+		body['start']['dateTime'] = start.isoformat(timespec='seconds')
+		body['end']['dateTime'] = finish.isoformat(timespec='seconds')
+		if event.notes:
+			body.update({'description':event.notes})
+		if event.members:
+			for i in event.members.split(' '):
+				body['attendees'].append({'email':nameToMail[i]})
+
+		return body
+
 	else:
 		return None
