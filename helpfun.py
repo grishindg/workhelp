@@ -82,5 +82,5 @@ def rebuilderDB(db, table):
 if __name__ == '__main__':
 	# create_table(PATH_TO_DB)
 	# insert_todb(PATH_TO_DB, EXFILE)
-	# stats(PATH_TO_DB, 'сентябрь')
-	rebuilderDB(PATH_TO_DB, 'сентябрь')
+	stats(PATH_TO_DB, 'октябрь')
+	# rebuilderDB(PATH_TO_DB, 'сентябрь')

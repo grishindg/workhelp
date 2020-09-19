@@ -198,6 +198,34 @@ class DBwriter:
 			res.append(TotEvents(*ev))
 		return res
 
+	def getStats(self, table):
+		conn = sqlite3.connect(self.db)
+		curs = conn.cursor()		
+		curs.execute('SELECT start, finish, members FROM {} ORDER BY start'.format(table))
+		res = curs.fetchall()
+		conn.close()
+
+		stat = []
+		holidays = []
+
+		firstday = dt.datetime.fromtimestamp(res[0][0]).day
+		lastday = dt.datetime.fromtimestamp(res[-1][0]).day
+
+
+		for name in WORKERS:
+			days = list(range(firstday,lastday+1))
+			hours = 0
+			for ev in res:
+				if name not in ev[2].split(' '):
+					continue
+				hours += (ev[1] - ev[0])/3600
+				day = dt.datetime.fromtimestamp(ev[0])
+				if day.day in days:
+					days.remove(day.day)
+			stat.append(hours)
+			holidays.append(days)
+
+		return (stat, holidays)
 class SynWithGoogle:
 	def __init__(self, toConsole):
 		self.month_n = ('январь', 'февраль', 'март', 'апрель',

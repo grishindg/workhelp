@@ -25,6 +25,7 @@ class Fastman(tk.Frame):
 		# self.grid(column=0, row=0, padx=5, pady=5)
 		# self.columnconfigure(0, weight=1)
 		self.columnconfigure(2, weight=1)
+		self.rowconfigure(2, weight=1)
 
 		#Переменные__________________________
 		
@@ -65,7 +66,7 @@ class Fastman(tk.Frame):
 		self.frWorkers = tk.Frame(self)
 
 		self.lManual = tk.Label(self, anchor='nw', justify='left',
-								text='F1 запись  F3 загрузить\nF2 оч участ\nF5 сохр SVG')
+								text='F1 запись  F3 выгрузить\nF2 оч участ\nF5 обновить')
 		self.eID = tk.Entry(self, width = 3, textvariable=self.vID, state='disable')
 
 		self.eYear = tk.Entry(self.frYrMn, textvariable=self.vYear, width=4, takefocus=0)
@@ -83,9 +84,12 @@ class Fastman(tk.Frame):
 
 		self.tCnsl = tk.Text(self, width=60, height=10, takefocus=0)
 
+		self.bGsynh = tk.Button(self.frWorkers, text='Gsynh', command=self.synWithGoogle)
+		self.bPrintImage = tk.Button(self.frWorkers, text='Print', command=self.saveSVG)
+
 		self.chWorkers = []
 		self.varWorkers = []
-
+		self.lStats = []
 		for i in range(len(WORKERS)):
 			tempvar = tk.BooleanVar()
 			tempvar.set(0)
@@ -95,9 +99,18 @@ class Fastman(tk.Frame):
 									variable=tempvar,
 									takefocus=0)
 			tempbt.grid(row=i, column=0, sticky=tk.NW)
+
 			self.chWorkers.append(tempbt)
+			tempLb = tk.Label(self.frWorkers, text='(⌒ω⌒)', width=8, takefocus=0)
+			tempLb.grid(row=i, column=1, sticky=tk.NW)
+			self.lStats.append(tempLb)
+
+
 
 		#Позиционирование________________
+		self.bGsynh.grid(row=len(WORKERS)+1, column=0, sticky=tk.E)
+		self.bPrintImage.grid(row=len(WORKERS)+1, column=1, sticky=tk.E)
+
 		self.frYrMn.grid(row = 0, column = 1, sticky=tk.E)
 		self.frWorkers.grid(row=1, column=3, rowspan=3, sticky=tk.NW)
 
@@ -116,7 +129,7 @@ class Fastman(tk.Frame):
 
 		self.eEvent.grid(row=0, column=2, sticky=tk.E)
 
-		self.tCnsl.grid(row=2, column=0, rowspan=2, columnspan=3, sticky=tk.W+tk.E)
+		self.tCnsl.grid(row=2, column=0, rowspan=2, columnspan=3, sticky=(tk.N, tk.S, tk.E, tk.W))
 
 
 
@@ -129,10 +142,10 @@ class Fastman(tk.Frame):
 		self.master.bind('<F2>', self.clearWorkers)
 		self.master.bind('<F1>', self.store)
 		self.cbMonth.bind('<<ComboboxSelected>>', self.callCB)
-		self.master.bind('<F5>', self.saveSVG)
+		self.master.bind('<F5>', self.callCB)
 		self.master.bind('<F3>', self.loadEvent) 
-		self.master.bind('<F10>', self.synWithGoogle)
-
+		# self.master.bind('<F10>', self.synWithGoogle)
+		# self.master.bind('<F11>', self.getStats)
 		#Функции по событиям и нет______
 
 	def callCB(self, event):
@@ -149,12 +162,16 @@ class Fastman(tk.Frame):
 				start = dt.datetime.fromtimestamp(ev[1])
 				start = start.strftime('%a %d')
 				self.toConsole( f'{ev[0]} {start} {ev[2]}')
+			self.getStats()
 			self.toConsole( '-----------------------------')
 			self.toConsole( f'месяц {month} есть в базе, lastID установлен в {self.lastID}')
 		else:
 			self.eID['state']= 'disable'
+
 			self.lastID = 0
+			self.clearStats()
 			self.toConsole( 'новый месяц, последний id установлен в 0')
+		self.clear()
 
 	def loadEvent(self, event):
 		temp_id = self.vID.get()
@@ -173,9 +190,6 @@ class Fastman(tk.Frame):
 		members = ev.members.split(' ')
 		if ev.members:
 			for name in members:#TODO ОШИБКА!!
-				print(len(members))
-				print(name)
-				print(members)
 				self.varWorkers[WORKERS.index(name)].set(1)
 		start = dt.datetime.fromtimestamp(ev.start)
 		finish = dt.datetime.fromtimestamp(ev.finish)
@@ -190,10 +204,6 @@ class Fastman(tk.Frame):
 		self.vListOfEvents.set(self.listNamesEvents[:])
 		self.modyfListNamesEvents = self.listNamesEvents[:]
 
-
-	# def storeTTinDb(self, event):
-	# 	self.dbWr.storeTTinDb()
-	# 	'''Запись месяца в базу данных'''
 
 		#События_______________________
 	def store(self, event):
@@ -242,11 +252,13 @@ class Fastman(tk.Frame):
 			#!!!!!!!!!!
 			ev.evID = self.lastID
 			mess = self.dbWr.storeOneEv(ev, self.vNameOfMonth.get())
+			self.getStats()
 			self.toConsole(mess)
 		else:
 			ev.evID = temp_id
 			mess = self.dbWr.updateOneEv(ev, self.vNameOfMonth.get())
 			mess =  'Событие обновлено' if mess else '-! НЕ ОБНОВЛЕНО !-'
+			self.getStats()
 			self.toConsole(mess)
 
 		self.clear()
@@ -254,10 +266,10 @@ class Fastman(tk.Frame):
 	def toConsole(self, text):
 		self.tCnsl.insert('1.0', text + '\n')
 
-	def saveSVG(self, event):
+	def saveSVG(self, event=None):
 		if self.dbWr.checkTable(self.vNameOfMonth.get()):
 			self.svgWriter.saveSvg(self.dbWr.loadMonth(self.vNameOfMonth.get()))
-			self.toConsole('Изображение сохраниено')
+			self.toConsole('Изображение сохранено')
 
 	def namesChange(self, event):
 		'''редактирует список событий в момент набора (автодополнение)'''
@@ -311,7 +323,20 @@ class Fastman(tk.Frame):
 		for w in self.varWorkers:
 			w.set(0)
 
-	def synWithGoogle(self, event):
+	def getStats(self, event=None):
+		if not self.lastID:
+			self.toConsole('-!getStats: не исполнено!-')
+			return
+		res = self.dbWr.getStats(self.vNameOfMonth.get())
+
+		for st, hl, lb in zip(*res, self.lStats):
+			lb['text'] = f'{st} {len(hl)}'
+
+	def clearStats(self):
+		for st in self.lStats:
+			st['text'] = '(⌒ω⌒)'
+
+	def synWithGoogle(self, event=None):
 		'''функция синхронизации, делает всё'''
 
 		mailToName = dict(zip(EMAILS, WORKERS))
@@ -383,8 +408,8 @@ class Fastman(tk.Frame):
 					new_updated = status['updated']
 					self.toConsole(f'новое время апдейта от гугл {new_updated}')
 					mess = self.dbWr.updateUpdated(lbIDs[glEv['id']].evID, new_updated, self.vNameOfMonth.get())
-					self.toConsole(f'--! и update обновлен локально. статус - {mess} !--\n'
-						'--! Событие измененное локально, обновлено в G кал !--\n')
+					self.toConsole(f'--! и update обновлен локально. статус - {mess} !--')
+					self.toConsole('--! Событие измененное локально, обновлено в G кал !--')
 					# использовать функцию перевода из lb d gl
 					# обновить gl
 
