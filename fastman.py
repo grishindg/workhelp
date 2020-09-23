@@ -160,8 +160,10 @@ class Fastman(tk.Frame):
 			self.toConsole( '-----------------------------')
 			for ev in temp_arr:
 				start = dt.datetime.fromtimestamp(ev[1])
-				start = start.strftime('%a %d')
-				self.toConsole( f'{ev[0]} {start} {ev[2]}')
+				start = start.strftime('%a%d %H%M')
+				finish = dt.datetime.fromtimestamp(ev[2])
+				finish = finish.strftime('%H%M') #внимание ! не учитывает если мероприятие переходит на 2 день
+				self.toConsole( f'{ev[0]} {start}-{finish} {ev[3]}')
 			self.getStats()
 			self.toConsole( '-----------------------------')
 			self.toConsole( f'месяц {month} есть в базе, lastID установлен в {self.lastID}')

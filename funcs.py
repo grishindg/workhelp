@@ -90,7 +90,7 @@ class DBwriter:
 														  ev.updated))
 		conn.commit()
 		conn.close()
-		mess += f'событие {ev.evID} {ev.name} записано в {month}\n'
+		mess += f'событие {ev.evID} {ev.name} записано в {month}'
 		return mess
 
 	def updateOneEv(self, ev, table, fromGcal=False):#TODO сделать запись update c связи с google
@@ -181,7 +181,7 @@ class DBwriter:
 	def loadShortList(self, table): #TODO возвращать TOT event?
 		conn = sqlite3.connect(self.db)
 		curs = conn.cursor()
-		curs.execute('SELECT evID, start, name FROM {} ORDER BY start'.format(table))
+		curs.execute('SELECT evID, start, finish, name FROM {} ORDER BY start'.format(table))
 		res = curs.fetchall()
 		conn.close()		
 		return res
