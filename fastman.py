@@ -269,8 +269,12 @@ class Fastman(tk.Frame):
 		self.tCnsl.insert('1.0', text + '\n')
 
 	def saveSVG(self, event=None):
-		if self.dbWr.checkTable(self.vNameOfMonth.get()):
-			self.svgWriter.saveSvg(self.dbWr.loadMonth(self.vNameOfMonth.get()))
+		month = self.vNameOfMonth.get()
+		if self.dbWr.checkTable(month):
+
+			holydays = self.dbWr.getStats(month)[1]
+
+			self.svgWriter.saveSvg(self.dbWr.loadMonth(month), holydays)
 			self.toConsole('Изображение сохранено')
 
 	def namesChange(self, event):

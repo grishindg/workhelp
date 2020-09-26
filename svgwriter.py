@@ -49,7 +49,7 @@ class SVGwriter():
 		self.stdEvAttrs = {'x': self.leftline, 'width': self.ev_w, 'height': self.ev_h, 'rx': '5', 'ry': '5', 'stroke': '#36383F', 'fill': 'None'}
 		self.stdTxAttrs = {'font-size': '9', 'text-anchor': 'middle', 'font-family': 'sans-serif', 'fill': '#36383F'}
 
-	def saveSvg(self, ev_arr):
+	def saveSvg(self, ev_arr, holidays=None):
 
 		locale.setlocale(locale.LC_TIME, "ru_RU")
 		tm_fr = r'%H:%M'
@@ -120,6 +120,11 @@ class SVGwriter():
 
 			y += 29
 
+		self.drawline(y, True)
+
+		if holidays:
+			self.drawHolidays(holidays)
+
 		self.drawVertLines()
 		self.root.attrib.update({'viewBox': f'0 0 530 {y+40}'})
 
@@ -129,10 +134,8 @@ class SVGwriter():
 
 		tree = ET.ElementTree(self.root)
 
-		tree.write('./files/image.svg', encoding="utf-8")
-		self.root = ET.Element('svg', {'xmlns': r'http://www.w3.org/2000/svg', 'viewBox': '0 0 530 500'})
-
-		print('Изображение сохранено ')
+		tree.write('./files/image.svg', encoding="utf-8") #Сохраниение изображения
+		self.root = ET.Element('svg', {'xmlns': r'http://www.w3.org/2000/svg', 'viewBox': '0 0 530 500'}) #сброс главного элемента для дальнейшей работы
 
 	def drawGreyBox(self, y, height):
 		attr = {'x': '203', 'y': y, 'width': '319', 'height': height, 'fill': '#F0F0F0'}
@@ -141,7 +144,7 @@ class SVGwriter():
 	def drawline(self, y, day=False):
 		attr = {'x1': '200', 'x2': '522', 'y1': str(y-1), 'y2': str(y-1), 'stroke': '#AAAAAA', 'fill': 'None', 'stroke-width': '0.5'}
 		if day:
-			attr.update({'stroke-width': '1', 'stroke': '#36383F', 'x1': '5'})
+			attr.update({'class': 'dayline', 'stroke-width': '1', 'stroke': '#36383F', 'x1': '5'})
 		ET.SubElement(self.root, 'line', attr)
 
 	def drawVertLines(self):
@@ -157,6 +160,21 @@ class SVGwriter():
 		attr.update(self.stdBzAttrs)
 		ET.SubElement(self.root, 'rect', attr)
 
+	def drawHdBox(self, index, y, y2):
+		attr = {'x': str(self.colmns[index]), 'y': str(y+1.5), 'height': str(y2-y-3),
+					 'fill': '#FFFFFF', 'stroke-width': '1','stroke': '#36383F',
+					 'stroke-loсation': 'inside', 'width': '39', 'rx': '5', 'ry': '5'}
+		ET.SubElement(self.root, 'rect', attr)
+
+	def drawHolidays(self, holidays):
+		daylines = self.root.findall('./line[@class="dayline"]')
+		y_values = [(int(y.attrib['y1'])) for y in daylines]
+
+		for i in range(len(holidays)):
+			for day in holidays[i]:
+				self.drawHdBox(i, y_values[day-1], y_values[day])
+
+
 
 
 def main():
@@ -164,22 +182,6 @@ def main():
 	wr = SVGwriter()
 	wr.saveSvg(arr)
 
-# def main():
-# 	self.root = ET.Element('svg', {'xmlns': r'http://www.w3.org/2000/svg', 'viewBox': '0 0 800 500'})
-# 	events = []
-# 	for i in COLMNS:
-# 		events.append(ET.SubElement(self.root, 'rect', {'x': i,
-# 												   'y': UPLINE,
-# 												   'width': '70',
-# 												   'height': temp_h,
-# 												   'rx': '5',
-# 												   'ry': '5',
-# 												   'fill': '#36383F'}))
-# 	tree = ET.ElementTree(self.root)
-
-# 	tree.write('image.svg')
-# 	print('Готово')
-
 
 if __name__ == '__main__':
-	main()
+	pass
