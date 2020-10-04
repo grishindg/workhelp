@@ -291,7 +291,7 @@ class SynWithGoogle:
 		if ev.members:
 			for i in ev.members.split(' '):
 				body['attendees'].append({'email':self.nameToMail[i]})
-
+		print(body)
 		event = self.service.events().insert(calendarId=self.totid, body=body).execute()
 		self.toConsole('-- новое событие добавлено в ggl --')
 		return event
