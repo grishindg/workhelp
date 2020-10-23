@@ -37,7 +37,6 @@ class Fastman(tk.Frame):
 
 
 		self.vYear = tk.IntVar(value=2020)
-		# self.vMonth = tk.IntVar(value=8) #Будет отменена
 
 		self.vNameOfMonth = tk.StringVar() #переменная для списка имен месяцев
 
@@ -352,7 +351,7 @@ class Fastman(tk.Frame):
 		self.toConsole('-- поиск новых событий в ЛБД --')
 		cn = 0
 		for ev in newEvnts:
-			self.toConsole(f'{ev.name} {ev.evID}')
+			self.toConsole(f'{ev.name} {ev.evID} {ev.members}')
 			glEv = synher.newEvToGl(ev)
 			new_ev = ev.copy()
 			new_ev.glID = glEv['id']

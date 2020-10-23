@@ -9,7 +9,7 @@ from google.auth.transport.requests import Request
 
 dateRe = re.compile(r'([0-3]?\d) ((?:[0-1]?[0-9]|2[0-4])[0-5]\d) ((?:[0-3]?\d) )?((?:[0-1]?[0-9]|2[0-4])[0-5]\d)')
 WORKERS = ('Даниил', 'Влад', 'Андрей', 'Марина', 'Арсений', 'Ольга', 'Василий','Денис')
-EMAILS = ('danja21dedkov@gmail.ru',
+EMAILS = ('danja21dedkov@gmail.com',
 		  'hirurg3000@mail.ru',
 		  'andryukha1999.mitin@gmail.com',
 		  'mkopylova885@gmail.com',
@@ -280,7 +280,12 @@ class SynWithGoogle:
 
 	def newEvToGl(self, ev):
 		'''добавляет событие в ggl календарь, возвращает заполненный объект'''
-		body = self.tempEvBody.copy()
+		body = {'summary': '',
+				'start': {'dateTime': ''},
+				'end': {'dateTime': ''},
+				'attendees': [],
+				'reminders':{'useDefault':False}
+				}
 		body['summary'] = ev.name
 		start = dt.datetime.fromtimestamp(ev.start, tz = self.tzi)
 		finish = dt.datetime.fromtimestamp(ev.finish, tz = self.tzi)
@@ -291,7 +296,7 @@ class SynWithGoogle:
 		if ev.members:
 			for i in ev.members.split(' '):
 				body['attendees'].append({'email':self.nameToMail[i]})
-		print(body)
+
 		event = self.service.events().insert(calendarId=self.totid, body=body).execute()
 		self.toConsole('-- новое событие добавлено в ggl --')
 		return event
@@ -313,7 +318,7 @@ def transEv(event, mode='GtoL', evID=0):
 	tempEvBody = {'summary': '',
 				   'start': {'dateTime': ''},
 				   'end': {'dateTime': ''},
-				   'attendees': [],
+				   'attendees': [], #TODO проверить notes??
 				 }
 	mailToName = dict(zip(EMAILS, WORKERS))
 	nameToMail = dict(zip(WORKERS, EMAILS))
