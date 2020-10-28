@@ -71,18 +71,24 @@ def getGservice():
 	month_n = ('январь', 'февраль', 'март', 'апрель',
 				'май', 'июнь', 'июль', 'август',
 				'сентябрь', 'октябрь', 'ноябрь', 'декабрь')
-	month = 'октябрь'
+	month = 'ноябрь'
 	tmin = dt.datetime(2020, month_n.index(month)+1, 1, tzinfo=tzi)
 	tmax = dt.datetime(2020, month_n.index(month)+2, 1, tzinfo=tzi)
-	events = service.events().list(calendarId=totid, showDeleted=True,
+	events = service.events().list(calendarId=totid, showDeleted=False,
 								   timeMin = tmin.isoformat(timespec='seconds'),
 								   timeMax = tmax.isoformat(timespec='seconds')).execute()
-	print(events.keys())
+	# print(events.keys())
 
-	for event in events['items']:
-		print(event)
+	# for event in events['items']:
+	# 	print(event)
 		# print(event['summary'])
 		# print(event['description'])
+
+	for event in events['items']:
+		service.events().delete(calendarId=totid, eventId=event['id']).execute()
+		# print(event['summary'])
+		# print(event['description'])
+
 
 
 

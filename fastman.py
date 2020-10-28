@@ -159,8 +159,10 @@ class Fastman(tk.Frame):
 			self.toConsole( '-----------------------------')
 			for ev in temp_arr:
 				start = dt.datetime.fromtimestamp(ev[1])
-				start = start.strftime('%a%d %H%M')
 				finish = dt.datetime.fromtimestamp(ev[2])
+				if start.day != finish.day:
+					self.toConsole( f'!! несовпадение дней начала и конца !!')
+				start = start.strftime('%a%d %H%M')
 				finish = finish.strftime('%H%M') #внимание ! не учитывает если мероприятие переходит на 2 день
 				self.toConsole( f'{ev[0]} {start}-{finish} {ev[3]}')
 			self.getStats()

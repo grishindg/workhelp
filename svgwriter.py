@@ -96,8 +96,8 @@ class SVGwriter():
 
 			if d < start.day:
 
-				if not d % 2:
-					self.drawGreyBox(str(old_y), str(y-old_y))
+				# if not d % 2:
+				# 	self.drawGreyBox(str(old_y), str(y-old_y))
 				old_y = y
 
 				attr = self.stdTxAttrs.copy()
@@ -169,9 +169,10 @@ class SVGwriter():
 	def drawHolidays(self, holidays):
 		daylines = self.root.findall('./line[@class="dayline"]')
 		y_values = [(int(y.attrib['y1'])) for y in daylines]
-
+		# print(holidays)
 		for i in range(len(holidays)):
 			for day in holidays[i]:
+				# print(holidays[i])
 				self.drawHdBox(i, y_values[day-1], y_values[day])
 
 
