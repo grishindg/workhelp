@@ -56,18 +56,21 @@ class SVGwriter():
 
 
 		#отрисовка имен
-		for name, x in zip(self.workers, self.colmns):
-			attr = {'x': str(x+19), 'y': '18.5', 'fill': '#36383F'}
-			attr.update(self.stdTxAttrs)
-			n = ET.SubElement(self.root, 'text', attr)
-			n.text = name
+		# for name, x in zip(self.workers, self.colmns):
+		# 	attr = {'x': str(x+19), 'y': '18.5', 'fill': '#36383F'}
+		# 	attr.update(self.stdTxAttrs)
+		# 	n = ET.SubElement(self.root, 'text', attr)
+		# 	n.text = name
 
 
 
 		d = 0
 
-		y = 27
-		old_y = 27
+		# y = 27
+		# old_y = 27
+
+		y = 1
+		old_y = 1
 
 		for ev in ev_arr:
 
