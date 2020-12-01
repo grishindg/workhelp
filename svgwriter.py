@@ -55,12 +55,7 @@ class SVGwriter():
 		tm_fr = r'%H:%M'
 
 
-		#отрисовка имен
-		# for name, x in zip(self.workers, self.colmns):
-		# 	attr = {'x': str(x+19), 'y': '18.5', 'fill': '#36383F'}
-		# 	attr.update(self.stdTxAttrs)
-		# 	n = ET.SubElement(self.root, 'text', attr)
-		# 	n.text = name
+
 
 
 
@@ -130,6 +125,14 @@ class SVGwriter():
 
 		self.drawVertLines()
 		self.root.attrib.update({'viewBox': f'0 0 530 {y+40}'})
+
+		# отрисовка имен
+		for name, x in zip(self.workers, self.colmns):
+			attr = {'x': str(x+19), 'y': '18.5'}
+			attr.update(self.stdTxAttrs)
+			attr.update({'fill': '#000000'})
+			n = ET.SubElement(self.root, 'text', attr)
+			n.text = name
 
 		vlines = self.root.findall('./line[@class="vert"]')
 		for vl in vlines:
