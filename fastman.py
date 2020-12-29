@@ -36,7 +36,7 @@ class Fastman(tk.Frame):
 		self.vEvent = tk.StringVar()
 
 
-		self.vYear = tk.IntVar(value=2020)
+		self.vYear = tk.IntVar(value=2021)
 
 		self.vNameOfMonth = tk.StringVar() #переменная для списка имен месяцев
 
