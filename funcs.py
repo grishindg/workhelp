@@ -305,8 +305,8 @@ class SynWithGoogle:
 		return self.service.events().update(calendarId=self.totid, eventId=glID, body=ev).execute()
 
 	def getMonth(self, month): #TODO сделать год
-		tmin = dt.datetime(2020, self.month_n.index(month)+1, 1, tzinfo=self.tzi)
-		tmax = dt.datetime(2020, self.month_n.index(month)+2, 1, tzinfo=self.tzi) + dt.timedelta(seconds=1)
+		tmin = dt.datetime(2021, self.month_n.index(month)+1, 1, tzinfo=self.tzi)
+		tmax = dt.datetime(2021, self.month_n.index(month)+2, 1, tzinfo=self.tzi) + dt.timedelta(seconds=1)
 		events = self.service.events().list(calendarId=self.totid,
 											timeMin = tmin.isoformat(timespec='seconds'),
 											timeMax = tmax.isoformat(timespec='seconds')).execute()
