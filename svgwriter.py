@@ -120,8 +120,8 @@ class SVGwriter():
 
 		self.drawline(y, True)
 
-		# if holidays:
-		# 	self.drawHolidays(holidays)
+		if holidays:
+			self.drawHolidays(holidays)
 
 		self.drawVertLines()
 		self.root.attrib.update({'viewBox': f'0 0 530 {y+40}'})
